@@ -29,12 +29,13 @@ fn define_ast(output_dir: &str, base_name: &str, types: Vec<&str>) {
     define_visitor(&mut content, &types);
     define_accept(&mut content);
     define_expr(&mut content, &types);
+    define_accept_for_expr(&mut content, &types);
     for type_string in types {
         let struct_name_and_fields: Vec<&str> = type_string.split(';').collect();
         let struct_name = struct_name_and_fields[0].trim();
         let fields = struct_name_and_fields[1].trim();
         define_struct(&mut content, &struct_name, fields);
-        define_impl(&mut content, &struct_name, fields);
+        define_impl_for_each_expr(&mut content, &struct_name, fields);
     }
     file.write_all(content.as_bytes());
 }
@@ -43,12 +44,12 @@ fn define_struct(content: &mut String, struct_name: &str, fields: &str) {
     content.push_str(&format!("pub struct {} {{\n", struct_name));
     for field in split_fields(fields) {
         let field = field.trim();
-        content.push_str(&format!("    {},\n", field));
+        content.push_str(&format!("    pub {},\n", field));
     }
     content.push_str("}\n\n");
 }
 
-fn define_impl(content: &mut String, struct_name: &str, fields: &str) {
+fn define_impl_for_each_expr(content: &mut String, struct_name: &str, fields: &str) {
     content.push_str(&format!("impl {} {{\n", struct_name));
     // start of new function
     content.push_str(&format!(
@@ -66,7 +67,7 @@ fn define_impl(content: &mut String, struct_name: &str, fields: &str) {
     // end of new function
     content.push_str(&format!("impl<T> Accept<T> for {} {{\n", struct_name));
     // start of accept function
-    content.push_str("    fn accept(self, visitor: impl Visitor<T>) -> T {\n");
+    content.push_str("    fn accept(&self, visitor: &impl Visitor<T>) -> T {\n");
     content.push_str(&format!(
         "        visitor.visit_{}_expr(self)\n",
         struct_name.to_lowercase()
@@ -83,7 +84,7 @@ fn define_visitor(content: &mut String, types: &Vec<&str>) {
         let struct_name = struct_name_and_fields[0].trim();
         let fields = struct_name_and_fields[1].trim();
         content.push_str(&format!(
-            "    fn visit_{}_expr(self, expr: {}) -> T;\n",
+            "    fn visit_{}_expr(&self, expr: &{}) -> T;\n",
             struct_name.to_lowercase(),
             struct_name
         ));
@@ -93,7 +94,7 @@ fn define_visitor(content: &mut String, types: &Vec<&str>) {
 
 fn define_accept(content: &mut String) {
     content.push_str("pub trait Accept<T> {\n");
-    content.push_str("    fn accept(self, visitor: impl Visitor<T>) -> T;\n");
+    content.push_str("    fn accept(&self, visitor: &impl Visitor<T>) -> T;\n");
     content.push_str("}\n\n");
 }
 
@@ -103,6 +104,22 @@ fn define_expr(content: &mut String, types: &Vec<&str>) {
         let struct_name = type_string.split(';').collect::<Vec<&str>>()[0].trim();
         content.push_str(&format!("    {}(Box<{}>),\n", struct_name, struct_name));
     }
+    content.push_str("}\n\n");
+}
+
+fn define_accept_for_expr(content: &mut String, types: &Vec<&str>) {
+    content.push_str("impl<T> Accept<T> for Expr {\n");
+    content.push_str("    fn accept(&self, visitor: &impl Visitor<T>) -> T {\n");
+    content.push_str("        match self {\n");
+    for type_string in types {
+        let struct_name = type_string.split(';').collect::<Vec<&str>>()[0].trim();
+        content.push_str(&format!(
+            "            Expr::{}(e) => e.accept(visitor),\n",
+            struct_name
+        ));
+    }
+    content.push_str("        }\n");
+    content.push_str("    }\n");
     content.push_str("}\n\n");
 }
 

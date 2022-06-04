@@ -3,7 +3,7 @@ use std::fmt;
 #[derive(Debug, PartialEq)]
 pub struct Token {
     token_type: TokenType,
-    lexeme: String,
+    pub lexeme: String,
     literal: LiteralType,
     line: u32,
 }
