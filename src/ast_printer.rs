@@ -48,18 +48,18 @@ fn parenthesize(visitor: &impl Visitor<String>, name: &str, exprs: Vec<&Box<Expr
 
 /// Debugger for AST
 pub fn print_ast() {
-    let num1 = Box::new(Literal::new(LiteralType::Num(123.0)));
+    let num1 = Literal::new(LiteralType::Num(123.0));
     let unary_right = Box::new(Expr::Literal(num1));
-    let left = Expr::Unary(Box::new(Unary::new(
+    let left = Expr::Unary(Unary::new(
         Token::new(TokenType::Minus, "-".to_owned(), LiteralType::Non, 1),
         unary_right,
-    )));
+    ));
     let operator = Token::new(TokenType::Star, "*".to_owned(), LiteralType::Non, 1);
-    let num2 = Box::new(Literal::new(LiteralType::Num(45.67)));
-    let grouping = Box::new(Grouping::new(Box::new(Expr::Literal(num2))));
+    let num2 = Literal::new(LiteralType::Num(45.67));
+    let grouping = Grouping::new(Box::new(Expr::Literal(num2)));
     let right = Box::new(Expr::Grouping(grouping));
     let bin_expr = Binary::new(Box::new(left), operator, right);
-    let expr = Expr::Binary(Box::new(bin_expr));
+    let expr = Expr::Binary(bin_expr);
     let ast_printer = AstPrinter {};
     println!("{}", ast_printer.print(expr))
 }

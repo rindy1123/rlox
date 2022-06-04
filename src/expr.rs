@@ -35,12 +35,12 @@ pub struct Binary {
 }
 
 impl Binary {
-    pub fn new(left: Box<Expr>, operator: Token, right: Box<Expr>) -> Binary {
-        Binary {
+    pub fn new(left: Box<Expr>, operator: Token, right: Box<Expr>) -> Box<Binary> {
+        Box::new(Binary {
             left,
             operator,
             right,
-        }
+        })
     }
 }
 
@@ -55,8 +55,8 @@ pub struct Grouping {
 }
 
 impl Grouping {
-    pub fn new(expression: Box<Expr>) -> Grouping {
-        Grouping { expression }
+    pub fn new(expression: Box<Expr>) -> Box<Grouping> {
+        Box::new(Grouping { expression })
     }
 }
 
@@ -71,8 +71,8 @@ pub struct Literal {
 }
 
 impl Literal {
-    pub fn new(value: LiteralType) -> Literal {
-        Literal { value }
+    pub fn new(value: LiteralType) -> Box<Literal> {
+        Box::new(Literal { value })
     }
 }
 
@@ -88,8 +88,8 @@ pub struct Unary {
 }
 
 impl Unary {
-    pub fn new(operator: Token, right: Box<Expr>) -> Unary {
-        Unary { operator, right }
+    pub fn new(operator: Token, right: Box<Expr>) -> Box<Unary> {
+        Box::new(Unary { operator, right })
     }
 }
 

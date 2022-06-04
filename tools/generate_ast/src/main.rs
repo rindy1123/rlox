@@ -6,11 +6,15 @@ use std::process::exit;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() != 2 {
+    if args.len() > 2 {
         println!("Usage: generate_ast <output directory>");
         exit(64)
     }
-    let output_dir = &args[1];
+    let output_dir = if args.len() == 1 {
+        "../../src"
+    } else {
+        &args[1]
+    };
     let types = vec![
         "Binary; left: Box<Expr>, operator: Token, right: Box<Expr>",
         "Grouping; expression: Box<Expr>",
@@ -53,15 +57,17 @@ fn define_impl_for_each_expr(content: &mut String, struct_name: &str, fields: &s
     content.push_str(&format!("impl {} {{\n", struct_name));
     // start of new function
     content.push_str(&format!(
-        "    pub fn new({}) -> {} {{\n",
+        "    pub fn new({}) -> Box<{}> {{\n",
         fields, struct_name
     ));
-    content.push_str(&format!("        {} {{\n", struct_name));
+    content.push_str("        Box::new(\n");
+    content.push_str(&format!("            {} {{\n", struct_name));
     for field in split_fields(fields) {
         let argument = field.split(':').collect::<Vec<&str>>()[0].trim();
-        content.push_str(&format!("            {},\n", argument));
+        content.push_str(&format!("                {},\n", argument));
     }
-    content.push_str("        }\n");
+    content.push_str("            }\n");
+    content.push_str("        )\n");
     content.push_str("    }\n");
     content.push_str("}\n\n");
     // end of new function
