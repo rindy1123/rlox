@@ -63,3 +63,26 @@ pub fn print_ast() {
     let ast_printer = AstPrinter {};
     println!("{}", ast_printer.print(expr))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ast_printer() {
+        let num1 = Literal::new(LiteralType::Num(123.0));
+        let unary_right = Box::new(Expr::Literal(num1));
+        let left = Expr::Unary(Unary::new(
+            Token::new(TokenType::Minus, "-".to_owned(), LiteralType::Non, 1),
+            unary_right,
+        ));
+        let operator = Token::new(TokenType::Star, "*".to_owned(), LiteralType::Non, 1);
+        let num2 = Literal::new(LiteralType::Num(45.67));
+        let grouping = Grouping::new(Box::new(Expr::Literal(num2)));
+        let right = Box::new(Expr::Grouping(grouping));
+        let bin_expr = Binary::new(Box::new(left), operator, right);
+        let expr = Expr::Binary(bin_expr);
+        let ast_printer = AstPrinter {};
+        assert_eq!(ast_printer.print(expr), "(* (- 123) (group 45.67))");
+    }
+}
