@@ -4,6 +4,8 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::process::exit;
 
+mod ast_printer;
+mod expr;
 mod lang_error;
 mod scanner;
 
@@ -32,6 +34,7 @@ fn run(source: String) -> String {
 }
 
 fn main() {
+    // ast_printer::print_ast();
     let args: Vec<String> = env::args().collect();
     if args.len() > 2 {
         println!("Usage: rlox [script]");
