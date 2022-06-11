@@ -4,9 +4,12 @@ use std::io::{self, Write};
 use std::path::Path;
 use std::process::exit;
 
+use ast_printer::AstPrinter;
+
 mod ast_printer;
 mod expr;
 mod lang_error;
+mod parser;
 mod scanner;
 
 fn run_file(path: &Path) {
@@ -28,13 +31,17 @@ fn run_prompt() {
     }
 }
 
-fn run(source: String) -> String {
-    println!("{}", source);
-    source
+fn run(source: String) {
+    let mut scanner = scanner::scanner::Scanner::new(source);
+    scanner.scan_tokens();
+    let mut parser = parser::Parser::new(scanner.tokens);
+    let expression = parser.parse();
+
+    // TODO: Error Handling
+    println!("{}", AstPrinter::new().print(expression))
 }
 
 fn main() {
-    // ast_printer::print_ast();
     let args: Vec<String> = env::args().collect();
     if args.len() > 2 {
         println!("Usage: rlox [script]");

@@ -1,17 +1,18 @@
-use std::fmt;
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
-    token_type: TokenType,
+    pub token_type: TokenType,
     pub lexeme: String,
-    literal: LiteralType,
-    line: u32,
+    pub literal: LiteralType,
+    pub line: u32,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum LiteralType {
     Str(String),
     Num(f64),
+    False(bool),
+    True(bool),
+    Nil,
     Non,
 }
 
@@ -26,14 +27,7 @@ impl Token {
     }
 }
 
-// impl fmt::Display for Token {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), Err> {
-//         write!(f, "{} {} {}", self.token_type, self.lexeme, self.literal);
-//         Ok(())
-//     }
-// }
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LeftParen,

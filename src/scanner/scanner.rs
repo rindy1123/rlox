@@ -4,11 +4,12 @@ use substring::Substring;
 
 pub struct Scanner {
     source: String,
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: u32,
 }
+
 const AND: &str = "and";
 const CLASS: &str = "class";
 const ELSE: &str = "else";
@@ -26,8 +27,27 @@ const TRUE: &str = "true";
 const VAR: &str = "var";
 const WHILE: &str = "while";
 
+impl Default for Scanner {
+    fn default() -> Self {
+        Scanner {
+            source: String::new(),
+            tokens: Vec::new(),
+            start: 0,
+            current: 0,
+            line: 1,
+        }
+    }
+}
+
 impl Scanner {
-    fn scan_tokens(&mut self) {
+    pub fn new(source: String) -> Scanner {
+        Scanner {
+            source,
+            ..Default::default()
+        }
+    }
+
+    pub fn scan_tokens(&mut self) {
         while !self.is_at_end() {
             self.start = self.current;
             self.scan_token();
@@ -252,13 +272,7 @@ impl Scanner {
 mod tests {
     use super::*;
     fn create_scanner() -> Scanner {
-        Scanner {
-            source: String::from("()"),
-            tokens: Vec::new(),
-            start: 0,
-            current: 0,
-            line: 1,
-        }
+        Scanner::new(String::from("()"))
     }
 
     #[test]
