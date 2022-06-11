@@ -16,11 +16,8 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Expr {
-        match self.expression() {
-            Ok(expr) => expr,
-            Err(_) => panic!(),
-        }
+    pub fn parse(&mut self) -> Result<Expr, LangError> {
+        self.expression()
     }
 
     fn expression(&mut self) -> Result<Expr, LangError> {

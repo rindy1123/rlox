@@ -5,6 +5,7 @@ use std::path::Path;
 use std::process::exit;
 
 use ast_printer::AstPrinter;
+use lang_error::LangError;
 
 mod ast_printer;
 mod expr;
@@ -14,7 +15,10 @@ mod scanner;
 
 fn run_file(path: &Path) {
     let source = fs::read_to_string(path).unwrap();
-    run(source);
+    match run(source) {
+        Err(_) => exit(65),
+        _ => return,
+    };
 }
 
 fn run_prompt() {
@@ -27,18 +31,20 @@ fn run_prompt() {
         if bytes == 0 {
             exit(0);
         }
-        run(buffer.trim().to_string());
+        match run(buffer.trim().to_string()) {
+            _ => continue,
+        };
     }
 }
 
-fn run(source: String) {
+fn run(source: String) -> Result<(), LangError> {
     let mut scanner = scanner::scanner::Scanner::new(source);
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
-    let expression = parser.parse();
+    let expression = parser.parse()?;
 
-    // TODO: Error Handling
-    println!("{}", AstPrinter::new().print(expression))
+    println!("{}", AstPrinter::new().print(expression));
+    Ok(())
 }
 
 fn main() {
