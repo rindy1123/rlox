@@ -4,7 +4,7 @@ use substring::Substring;
 
 pub struct Scanner {
     source: String,
-    pub tokens: Vec<Token>,
+    tokens: Vec<Token>,
     start: usize,
     current: usize,
     line: u32,
@@ -47,7 +47,7 @@ impl Scanner {
         }
     }
 
-    pub fn scan_tokens(&mut self) {
+    pub fn scan_tokens(&mut self) -> Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
             self.scan_token();
@@ -59,6 +59,7 @@ impl Scanner {
             self.line,
         );
         self.tokens.push(eof_token);
+        self.tokens.clone()
     }
 
     fn is_at_end(&self) -> bool {

@@ -33,8 +33,8 @@ fn run_prompt() {
 
 fn run(source: String) {
     let mut scanner = scanner::scanner::Scanner::new(source);
-    scanner.scan_tokens();
-    let mut parser = parser::Parser::new(scanner.tokens);
+    let tokens = scanner.scan_tokens();
+    let mut parser = parser::Parser::new(tokens);
     let expression = parser.parse();
 
     // TODO: Error Handling
