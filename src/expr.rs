@@ -12,6 +12,7 @@ pub trait Accept<T> {
     fn accept(&self, visitor: &impl Visitor<T>) -> T;
 }
 
+#[derive(Clone)]
 pub enum Expr {
     Binary(Box<Binary>),
     Grouping(Box<Grouping>),
@@ -30,6 +31,7 @@ impl<T> Accept<T> for Expr {
     }
 }
 
+#[derive(Clone)]
 pub struct Binary {
     pub left: Box<Expr>,
     pub operator: Token,
@@ -52,6 +54,7 @@ impl<T> Accept<T> for Binary {
     }
 }
 
+#[derive(Clone)]
 pub struct Grouping {
     pub expression: Box<Expr>,
 }
@@ -68,6 +71,7 @@ impl<T> Accept<T> for Grouping {
     }
 }
 
+#[derive(Clone)]
 pub struct Literal {
     pub value: LiteralType,
 }
@@ -84,6 +88,7 @@ impl<T> Accept<T> for Literal {
     }
 }
 
+#[derive(Clone)]
 pub struct Unary {
     pub operator: Token,
     pub right: Box<Expr>,

@@ -29,7 +29,8 @@ fn define_ast(output_dir: &str, base_name: &str, types: Vec<&str>) {
     let path = format!("{}/{}.rs", output_dir, base_name);
     let mut file = File::create(&path).unwrap();
     let mut content = String::new();
-    content.push_str("use crate::scanner::token::{LiteralType, Token};\n");
+    content.push_str("use crate::scanner::literal_type::LiteralType;\n");
+    content.push_str("use crate::scanner::token::Token;\n\n");
     define_visitor(&mut content, &types);
     define_accept(&mut content);
     define_expr(&mut content, &types);
@@ -45,6 +46,7 @@ fn define_ast(output_dir: &str, base_name: &str, types: Vec<&str>) {
 }
 
 fn define_struct(content: &mut String, struct_name: &str, fields: &str) {
+    content.push_str("#[derive(Clone)]\n");
     content.push_str(&format!("pub struct {} {{\n", struct_name));
     for field in split_fields(fields) {
         let field = field.trim();
@@ -105,6 +107,7 @@ fn define_accept(content: &mut String) {
 }
 
 fn define_expr(content: &mut String, types: &Vec<&str>) {
+    content.push_str("#[derive(Clone)]\n");
     content.push_str("pub enum Expr {\n");
     for type_string in types {
         let struct_name = type_string.split(';').collect::<Vec<&str>>()[0].trim();

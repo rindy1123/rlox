@@ -1,4 +1,3 @@
-use crate::lang_error::LangError;
 use std::cmp;
 use std::ops;
 
@@ -9,23 +8,7 @@ pub enum LiteralType {
     False,
     True,
     Nil,
-    Error(LangError),
-}
-
-impl LiteralType {
-    pub fn convert_num_to_f64(self) -> Result<f64, LangError> {
-        match self {
-            Self::Num(double) => Ok(double),
-            _ => Err(LangError::ConvertNumError),
-        }
-    }
-
-    pub fn convert_to_string(self) -> Result<String, LangError> {
-        match self {
-            Self::Str(string) => Ok(string),
-            _ => Err(LangError::ConvertNumError),
-        }
-    }
+    Error(String),
 }
 
 pub fn convert_bool_to_literal_bool(b: bool) -> LiteralType {
@@ -37,7 +20,7 @@ pub fn convert_bool_to_literal_bool(b: bool) -> LiteralType {
 }
 
 pub mod comparison {
-    use super::{format_error, LiteralType};
+    use super::LiteralType;
 
     pub fn gt(left: LiteralType, right: LiteralType) -> LiteralType {
         match (left, right) {
@@ -48,7 +31,7 @@ pub mod comparison {
                     LiteralType::False
                 }
             }
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 
@@ -61,7 +44,7 @@ pub mod comparison {
                     LiteralType::False
                 }
             }
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 
@@ -74,7 +57,7 @@ pub mod comparison {
                     LiteralType::False
                 }
             }
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 
@@ -87,7 +70,7 @@ pub mod comparison {
                     LiteralType::False
                 }
             }
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 }
@@ -98,7 +81,7 @@ impl ops::Sub for LiteralType {
     fn sub(self, right: Self) -> Self::Output {
         match (self, right) {
             (Self::Num(left_num), Self::Num(right_num)) => LiteralType::Num(left_num - right_num),
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 }
@@ -110,7 +93,7 @@ impl ops::Add for LiteralType {
         match (self, right) {
             (Self::Num(left_num), Self::Num(right_num)) => LiteralType::Num(left_num + right_num),
             (Self::Str(left_str), Self::Str(right_str)) => LiteralType::Str(left_str + &right_str),
-            _ => format_error("Operands must be numbers or strings.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers or strings.".to_string()),
         }
     }
 }
@@ -121,7 +104,7 @@ impl ops::Mul for LiteralType {
     fn mul(self, right: Self) -> Self::Output {
         match (self, right) {
             (Self::Num(left_num), Self::Num(right_num)) => LiteralType::Num(left_num * right_num),
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 }
@@ -132,7 +115,7 @@ impl ops::Div for LiteralType {
     fn div(self, right: Self) -> Self::Output {
         match (self, right) {
             (Self::Num(left_num), Self::Num(right_num)) => LiteralType::Num(left_num / right_num),
-            _ => format_error("Operands must be numbers.".to_string()),
+            _ => LiteralType::Error("Operands must be numbers.".to_string()),
         }
     }
 }
@@ -141,10 +124,10 @@ impl ops::Neg for LiteralType {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
-        match self.convert_num_to_f64() {
-            Ok(n) => LiteralType::Num(-n),
-            Err(_) => format_error("Operand must be a number.".to_string()),
+        if let LiteralType::Num(n) = self {
+            return LiteralType::Num(-n);
         }
+        LiteralType::Error("Operand must be a number.".to_string())
     }
 }
 
@@ -163,18 +146,16 @@ impl cmp::PartialEq for LiteralType {
     fn eq(&self, right: &Self) -> bool {
         match self {
             Self::Num(left_num) => {
-                let right_num = match right.clone().convert_num_to_f64() {
-                    Ok(n) => n,
-                    Err(_) => return false,
+                if let LiteralType::Num(right_num) = right.clone() {
+                    return *left_num == right_num;
                 };
-                *left_num == right_num
+                false
             }
             Self::Str(left_str) => {
-                let right_str = match right.clone().convert_to_string() {
-                    Ok(n) => n,
-                    Err(_) => return false,
+                if let LiteralType::Str(right_str) = right.clone() {
+                    return *left_str == right_str;
                 };
-                *left_str == right_str
+                false
             }
             Self::Nil => matches!(right, Self::Nil),
             Self::True => matches!(right, Self::True),
@@ -182,10 +163,6 @@ impl cmp::PartialEq for LiteralType {
             _ => panic!("Do not use this value"),
         }
     }
-}
-
-fn format_error(message: String) -> LiteralType {
-    LiteralType::Error(LangError::RuntimeError(message))
 }
 
 #[cfg(test)]
