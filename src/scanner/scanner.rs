@@ -53,12 +53,7 @@ impl Scanner {
             self.start = self.current;
             self.scan_token();
         }
-        let eof_token = Token::new(
-            TokenType::EOF,
-            String::from(""),
-            LiteralType::Non,
-            self.line,
-        );
+        let eof_token = Token::new(TokenType::EOF, String::from(""), None, self.line);
         self.tokens.push(eof_token);
         self.tokens.clone()
     }
@@ -160,10 +155,10 @@ impl Scanner {
     }
 
     fn add_token_without_value(&mut self, token_type: TokenType) {
-        self.add_token(token_type, LiteralType::Non);
+        self.add_token(token_type, None);
     }
 
-    fn add_token(&mut self, token_type: TokenType, literal: LiteralType) {
+    fn add_token(&mut self, token_type: TokenType, literal: Option<LiteralType>) {
         let lexeme = self.source.substring(self.start, self.current).to_string();
         let token = Token::new(token_type, lexeme, literal, self.line);
         self.tokens.push(token);
@@ -201,7 +196,7 @@ impl Scanner {
             .source
             .substring(self.start + 1, self.current - 1)
             .to_string();
-        self.add_token(TokenType::LString, LiteralType::Str(value));
+        self.add_token(TokenType::LString, Some(LiteralType::Str(value)));
     }
 
     fn is_digit(&self, c: char) -> bool {
@@ -231,7 +226,7 @@ impl Scanner {
                 return;
             }
         };
-        self.add_token(TokenType::Number, LiteralType::Num(literal))
+        self.add_token(TokenType::Number, Some(LiteralType::Num(literal)))
     }
 
     fn is_alpha(&self, c: char) -> bool {
@@ -336,7 +331,7 @@ mod tests {
         let mut scanner1 = create_scanner();
         scanner1.source = String::from("012");
         scanner1.current = 2;
-        scanner1.add_token(TokenType::LeftParen, LiteralType::Non);
+        scanner1.add_token(TokenType::LeftParen, None);
         assert_eq!(scanner1.tokens[0].token_type, TokenType::LeftParen);
     }
 
@@ -368,8 +363,11 @@ mod tests {
         scanner1.current = 1;
         scanner1.string();
         let value = String::from("abcdefg\nhijkl");
-        assert_eq!(scanner1.tokens[0].token_type, TokenType::LString);
-        assert_eq!(scanner1.tokens[0].literal, LiteralType::Str(value));
+        assert_eq!(&scanner1.tokens[0].token_type, &TokenType::LString);
+        assert_eq!(
+            *scanner1.tokens[0].literal.as_ref().unwrap(),
+            LiteralType::Str(value)
+        );
     }
 
     #[test]
@@ -396,7 +394,10 @@ mod tests {
         scanner1.current = 1;
         scanner1.number();
         assert_eq!(scanner1.tokens[0].token_type, TokenType::Number);
-        assert_eq!(scanner1.tokens[0].literal, LiteralType::Num(123.0));
+        assert_eq!(
+            *scanner1.tokens[0].literal.as_ref().unwrap(),
+            LiteralType::Num(123.0)
+        );
     }
 
     #[test]
@@ -406,7 +407,10 @@ mod tests {
         scanner1.current = 1;
         scanner1.number();
         assert_eq!(scanner1.tokens[0].token_type, TokenType::Number);
-        assert_eq!(scanner1.tokens[0].literal, LiteralType::Num(123.456));
+        assert_eq!(
+            *scanner1.tokens[0].literal.as_ref().unwrap(),
+            LiteralType::Num(123.456)
+        );
     }
 
     #[test]

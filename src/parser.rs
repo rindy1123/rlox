@@ -77,7 +77,7 @@ impl Parser {
         }
 
         if self.match_token_type(&vec![TokenType::Number, TokenType::LString]) {
-            let value = self.previous().clone().literal;
+            let value = self.previous().clone().literal.unwrap();
             let literal = Literal::new(value);
             return Ok(Expr::Literal(literal));
         }

@@ -26,7 +26,6 @@ impl Visitor<String> for AstPrinter {
 
     fn visit_literal_expr(&self, expr: &Literal) -> String {
         match &expr.value {
-            LiteralType::Non => "".to_owned(),
             LiteralType::Nil => "nil".to_owned(),
             LiteralType::True => "true".to_owned(),
             LiteralType::False => "false".to_owned(),
@@ -64,10 +63,10 @@ mod tests {
         let num1 = Literal::new(LiteralType::Num(123.0));
         let unary_right = Box::new(Expr::Literal(num1));
         let left = Expr::Unary(Unary::new(
-            Token::new(TokenType::Minus, "-".to_owned(), LiteralType::Non, 1),
+            Token::new(TokenType::Minus, "-".to_owned(), None, 1),
             unary_right,
         ));
-        let operator = Token::new(TokenType::Star, "*".to_owned(), LiteralType::Non, 1);
+        let operator = Token::new(TokenType::Star, "*".to_owned(), None, 1);
         let num2 = Literal::new(LiteralType::Num(45.67));
         let grouping = Grouping::new(Box::new(Expr::Literal(num2)));
         let right = Box::new(Expr::Grouping(grouping));

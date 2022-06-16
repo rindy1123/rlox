@@ -4,12 +4,17 @@ use super::literal_type::LiteralType;
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: LiteralType,
+    pub literal: Option<LiteralType>,
     pub line: u32,
 }
 
 impl Token {
-    pub fn new(token_type: TokenType, lexeme: String, literal: LiteralType, line: u32) -> Token {
+    pub fn new(
+        token_type: TokenType,
+        lexeme: String,
+        literal: Option<LiteralType>,
+        line: u32,
+    ) -> Token {
         Token {
             token_type,
             lexeme,

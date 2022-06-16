@@ -9,7 +9,6 @@ pub enum LiteralType {
     False,
     True,
     Nil,
-    Non,
     Error(LangError),
 }
 
@@ -155,7 +154,6 @@ impl ops::Not for LiteralType {
     fn not(self) -> Self::Output {
         match self {
             Self::False | Self::Nil => LiteralType::True,
-            Self::Non => panic!("Do not use this value"),
             _ => LiteralType::False,
         }
     }
