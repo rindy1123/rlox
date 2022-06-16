@@ -1,19 +1,11 @@
-#[derive(Debug, PartialEq, Clone)]
+use super::literal_type::LiteralType;
+
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: LiteralType,
     pub line: u32,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum LiteralType {
-    Str(String),
-    Num(f64),
-    False(bool),
-    True(bool),
-    Nil,
-    Non,
 }
 
 impl Token {

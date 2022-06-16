@@ -9,6 +9,7 @@ use lang_error::LangError;
 
 mod ast_printer;
 mod expr;
+mod interpreter;
 mod lang_error;
 mod parser;
 mod scanner;

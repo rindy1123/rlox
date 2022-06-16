@@ -1,4 +1,6 @@
-use crate::scanner::token::{LiteralType, Token};
+use crate::scanner::literal_type::LiteralType;
+use crate::scanner::token::Token;
+
 pub trait Visitor<T> {
     fn visit_binary_expr(&self, expr: &Binary) -> T;
     fn visit_grouping_expr(&self, expr: &Grouping) -> T;

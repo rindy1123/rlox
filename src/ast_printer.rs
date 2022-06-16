@@ -1,5 +1,5 @@
 use crate::expr::{Accept, Binary, Expr, Grouping, Literal, Unary, Visitor};
-use crate::scanner::token::*;
+use crate::scanner::literal_type::LiteralType;
 
 pub struct AstPrinter {}
 
@@ -28,10 +28,11 @@ impl Visitor<String> for AstPrinter {
         match &expr.value {
             LiteralType::Non => "".to_owned(),
             LiteralType::Nil => "nil".to_owned(),
-            LiteralType::True(_) => "true".to_owned(),
-            LiteralType::False(_) => "false".to_owned(),
+            LiteralType::True => "true".to_owned(),
+            LiteralType::False => "false".to_owned(),
             LiteralType::Num(n) => n.to_string(),
             LiteralType::Str(s) => s.to_owned(),
+            _ => panic!("Something went wrong"),
         }
     }
 
@@ -56,6 +57,7 @@ fn parenthesize(visitor: &impl Visitor<String>, name: &str, exprs: Vec<&Box<Expr
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::scanner::token::*;
 
     #[test]
     fn test_ast_printer() {

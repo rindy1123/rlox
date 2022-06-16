@@ -1,6 +1,7 @@
 use crate::expr::{Binary, Expr, Grouping, Literal, Unary};
 use crate::lang_error::{self, LangError};
-use crate::scanner::token::{LiteralType, Token, TokenType};
+use crate::scanner::literal_type::LiteralType;
+use crate::scanner::token::{Token, TokenType};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -63,11 +64,11 @@ impl Parser {
 
     fn primary(&mut self) -> Result<Expr, LangError> {
         if self.match_token_type(&vec![TokenType::False]) {
-            let literal = Literal::new(LiteralType::False(false));
+            let literal = Literal::new(LiteralType::False);
             return Ok(Expr::Literal(literal));
         }
         if self.match_token_type(&vec![TokenType::True]) {
-            let literal = Literal::new(LiteralType::True(true));
+            let literal = Literal::new(LiteralType::True);
             return Ok(Expr::Literal(literal));
         }
         if self.match_token_type(&vec![TokenType::Nil]) {

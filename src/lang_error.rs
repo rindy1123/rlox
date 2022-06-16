@@ -1,7 +1,10 @@
 use crate::scanner::token::{Token, TokenType};
 
+#[derive(Debug, Clone)]
 pub enum LangError {
     ParseError,
+    ConvertNumError,
+    RuntimeError(String),
 }
 
 pub fn error(line_num: u32, message: String) {

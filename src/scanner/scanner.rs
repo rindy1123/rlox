@@ -1,5 +1,6 @@
 use crate::lang_error;
-use crate::scanner::token::{LiteralType, Token, TokenType};
+use crate::scanner::literal_type::LiteralType;
+use crate::scanner::token::{Token, TokenType};
 use substring::Substring;
 
 pub struct Scanner {
@@ -279,29 +280,18 @@ mod tests {
     #[test]
     fn test_scan_tokens() {
         let mut scanner1 = create_scanner();
-        let expected_token1 =
-            Token::new(TokenType::LeftParen, String::from("("), LiteralType::Non, 1);
-        let expected_token2 = Token::new(
-            TokenType::RightParen,
-            String::from(")"),
-            LiteralType::Non,
-            1,
-        );
-        let expected_token3 = Token::new(TokenType::EOF, String::from(""), LiteralType::Non, 1);
         scanner1.scan_tokens();
-        assert_eq!(scanner1.tokens[0], expected_token1);
-        assert_eq!(scanner1.tokens[1], expected_token2);
-        assert_eq!(scanner1.tokens[2], expected_token3);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::LeftParen);
+        assert_eq!(scanner1.tokens[1].token_type, TokenType::RightParen);
+        assert_eq!(scanner1.tokens[2].token_type, TokenType::EOF);
         assert_eq!(scanner1.tokens.len(), 3);
     }
 
     #[test]
     fn test_scan_token() {
         let mut scanner1 = create_scanner();
-        let expected_token =
-            Token::new(TokenType::LeftParen, String::from("("), LiteralType::Non, 1);
         scanner1.scan_token();
-        assert_eq!(scanner1.tokens[0], expected_token);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::LeftParen);
     }
 
     #[test]
@@ -347,13 +337,7 @@ mod tests {
         scanner1.source = String::from("012");
         scanner1.current = 2;
         scanner1.add_token(TokenType::LeftParen, LiteralType::Non);
-        let expected_token = Token::new(
-            TokenType::LeftParen,
-            String::from("01"),
-            LiteralType::Non,
-            1,
-        );
-        assert_eq!(scanner1.tokens[0], expected_token);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::LeftParen);
     }
 
     #[test]
@@ -384,13 +368,8 @@ mod tests {
         scanner1.current = 1;
         scanner1.string();
         let value = String::from("abcdefg\nhijkl");
-        let expected_token = Token::new(
-            TokenType::LString,
-            String::from("\"abcdefg\nhijkl\""),
-            LiteralType::Str(value),
-            2,
-        );
-        assert_eq!(scanner1.tokens[0], expected_token);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::LString);
+        assert_eq!(scanner1.tokens[0].literal, LiteralType::Str(value));
     }
 
     #[test]
@@ -416,14 +395,8 @@ mod tests {
         scanner1.source = String::from("123");
         scanner1.current = 1;
         scanner1.number();
-        let value = 123f64;
-        let expected_token = Token::new(
-            TokenType::Number,
-            String::from("123"),
-            LiteralType::Num(value),
-            1,
-        );
-        assert_eq!(scanner1.tokens[0], expected_token);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::Number);
+        assert_eq!(scanner1.tokens[0].literal, LiteralType::Num(123.0));
     }
 
     #[test]
@@ -432,14 +405,8 @@ mod tests {
         scanner1.source = String::from("123.456");
         scanner1.current = 1;
         scanner1.number();
-        let value = 123.456f64;
-        let expected_token = Token::new(
-            TokenType::Number,
-            String::from("123.456"),
-            LiteralType::Num(value),
-            1,
-        );
-        assert_eq!(scanner1.tokens[0], expected_token);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::Number);
+        assert_eq!(scanner1.tokens[0].literal, LiteralType::Num(123.456));
     }
 
     #[test]
@@ -455,7 +422,6 @@ mod tests {
         scanner1.source = String::from("and");
         scanner1.current = 1;
         scanner1.identifier();
-        let expected_token = Token::new(TokenType::And, String::from("and"), LiteralType::Non, 1);
-        assert_eq!(scanner1.tokens[0], expected_token);
+        assert_eq!(scanner1.tokens[0].token_type, TokenType::And);
     }
 }
