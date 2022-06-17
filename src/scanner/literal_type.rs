@@ -93,6 +93,20 @@ impl ops::Add for LiteralType {
         match (self, right) {
             (Self::Num(left_num), Self::Num(right_num)) => LiteralType::Num(left_num + right_num),
             (Self::Str(left_str), Self::Str(right_str)) => LiteralType::Str(left_str + &right_str),
+            (Self::Str(left_str), Self::Num(right_num)) => {
+                LiteralType::Str(left_str + &right_num.to_string())
+            }
+            (Self::Str(left_str), Self::Nil) => LiteralType::Str(left_str + "nil"),
+            (Self::Str(left_str), Self::True) => LiteralType::Str(left_str + "true"),
+            (Self::Str(left_str), Self::False) => LiteralType::Str(left_str + "false"),
+            (Self::Num(left_num), Self::Str(right_str)) => {
+                LiteralType::Str(left_num.to_string() + &right_str)
+            }
+            (Self::Nil, Self::Str(right_str)) => LiteralType::Str("nil".to_string() + &right_str),
+            (Self::True, Self::Str(right_str)) => LiteralType::Str("true".to_string() + &right_str),
+            (Self::False, Self::Str(right_str)) => {
+                LiteralType::Str("false".to_string() + &right_str)
+            }
             _ => LiteralType::Error("Operands must be numbers or strings.".to_string()),
         }
     }
@@ -183,7 +197,13 @@ mod tests {
         fn test_add_str() {
             let left = LiteralType::Str("Hello".to_string());
             let right = LiteralType::Str(" World".to_string());
-            assert_eq!(left + right, LiteralType::Str("Hello World".to_string()))
+            assert_eq!(left + right, LiteralType::Str("Hello World".to_string()));
+            let left = LiteralType::Str("Hello".to_string());
+            let right = LiteralType::Num(123.0);
+            assert_eq!(left + right, LiteralType::Str("Hello123".to_string()));
+            let left = LiteralType::Nil;
+            let right = LiteralType::Str(" World".to_string());
+            assert_eq!(left + right, LiteralType::Str("nil World".to_string()));
         }
 
         #[test]
