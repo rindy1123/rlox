@@ -1,3 +1,5 @@
+use std::f64;
+
 use crate::lang_error;
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
@@ -18,6 +20,8 @@ const FALSE: &str = "false";
 const FOR: &str = "for";
 const FUN: &str = "fun";
 const IF: &str = "if";
+const INF: &str = "inf";
+const NAN: &str = "NaN";
 const NIL: &str = "nil";
 const OR: &str = "or";
 const PRINT: &str = "print";
@@ -242,6 +246,12 @@ impl Scanner {
             self.advance();
         }
         let text = self.source.substring(self.start, self.current);
+        if text == INF {
+            return self.add_token(TokenType::Number, Some(LiteralType::Num(f64::INFINITY)));
+        }
+        if text == NAN {
+            return self.add_token(TokenType::Number, Some(LiteralType::Num(f64::NAN)));
+        }
         let token_type = match text {
             AND => TokenType::And,
             CLASS => TokenType::Class,
