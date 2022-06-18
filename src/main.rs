@@ -15,6 +15,7 @@ mod interpreter;
 mod lang_error;
 mod parser;
 mod scanner;
+mod stmt;
 
 fn run_file(path: &Path, interpreter: Interpreter) {
     let source = fs::read_to_string(path).unwrap();
