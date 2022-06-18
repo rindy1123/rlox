@@ -1,7 +1,8 @@
-use crate::expr::{Accept, Binary, Expr, Grouping, Literal, Unary, Visitor};
+use crate::expr::{self, Accept as AcceptExpr, Binary, Expr, Grouping, Literal, Unary};
 use crate::lang_error::LangError;
 use crate::scanner::literal_type::{self, LiteralType};
 use crate::scanner::token::*;
+use crate::stmt::{self, Accept as AcceptStmt, Stmt};
 use substring::Substring;
 
 pub struct Interpreter {}
@@ -11,11 +12,15 @@ impl Interpreter {
         Interpreter {}
     }
 
-    pub fn interpret(&self, expr: Expr) -> Result<(), LangError> {
-        let value = self.evaluate(&Box::new(expr.clone()))?;
-
-        println!("{}", stringify_literal(value));
+    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<(), LangError> {
+        for statement in statements {
+            self.execute(statement)?;
+        }
         Ok(())
+    }
+
+    fn execute(&self, statement: Stmt) -> Result<(), LangError> {
+        statement.accept(self)
     }
 
     fn evaluate(&self, expr: &Box<Expr>) -> Result<LiteralType, LangError> {
@@ -23,7 +28,20 @@ impl Interpreter {
     }
 }
 
-impl Visitor<Result<LiteralType, LangError>> for Interpreter {
+impl stmt::Visitor<Result<(), LangError>> for Interpreter {
+    fn visit_expression_stmt(&self, stmt: &stmt::Expression) -> Result<(), LangError> {
+        self.evaluate(&Box::new(stmt.clone().expression))?;
+        Ok(())
+    }
+
+    fn visit_print_stmt(&self, stmt: &stmt::Print) -> Result<(), LangError> {
+        let value = self.evaluate(&Box::new(stmt.clone().expression))?;
+        println!("{}", stringify_literal(value));
+        Ok(())
+    }
+}
+
+impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {
     fn visit_binary_expr(&self, expr: &Binary) -> Result<LiteralType, LangError> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;

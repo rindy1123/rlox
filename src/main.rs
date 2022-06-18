@@ -50,8 +50,8 @@ fn run(source: String, interpreter: &Interpreter) -> Result<(), LangError> {
     let mut scanner = scanner::scanner::Scanner::new(source);
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
-    let expression = parser.parse()?;
-    if let Err(ref e) = interpreter.interpret(expression) {
+    let statements = parser.parse()?;
+    if let Err(ref e) = interpreter.interpret(statements) {
         if let LangError::RuntimeError(message, token) = e {
             lang_error::error(token.line, message.to_string())
         }

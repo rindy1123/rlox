@@ -2,6 +2,7 @@ use crate::expr::{Binary, Expr, Grouping, Literal, Unary};
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
+use crate::stmt::{Expression, Print, Stmt};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -17,8 +18,32 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Result<Expr, LangError> {
-        self.expression()
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, LangError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+        while !self.is_at_end() {
+            let statement = self.statement()?;
+            statements.push(statement);
+        }
+        Ok(statements)
+    }
+
+    fn statement(&mut self) -> Result<Stmt, LangError> {
+        if self.match_token_type(&vec![TokenType::Print]) {
+            return self.print_statement();
+        }
+        self.expression_statement()
+    }
+
+    fn print_statement(&mut self) -> Result<Stmt, LangError> {
+        let value = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Print(Print::new(value)))
+    }
+
+    fn expression_statement(&mut self) -> Result<Stmt, LangError> {
+        let value = self.expression()?;
+        self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
+        Ok(Stmt::Expression(Expression::new(value)))
     }
 
     fn expression(&mut self) -> Result<Expr, LangError> {
