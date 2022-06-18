@@ -31,9 +31,7 @@ pub struct Expression {
 
 impl Expression {
     pub fn new(expression: Expr) -> Expression {
-        Expression {
-            expression,
-        }
+        Expression { expression }
     }
 }
 
@@ -50,9 +48,7 @@ pub struct Print {
 
 impl Print {
     pub fn new(expression: Expr) -> Print {
-        Print {
-            expression,
-        }
+        Print { expression }
     }
 }
 
@@ -61,4 +57,3 @@ impl<T> Accept<T> for Print {
         visitor.visit_print_stmt(self)
     }
 }
-
