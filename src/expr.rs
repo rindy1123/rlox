@@ -2,19 +2,21 @@ use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::Token;
 
 pub trait Visitor<T> {
-    fn visit_binary_expr(&self, expr: &Binary) -> T;
-    fn visit_grouping_expr(&self, expr: &Grouping) -> T;
-    fn visit_literal_expr(&self, expr: &Literal) -> T;
-    fn visit_unary_expr(&self, expr: &Unary) -> T;
-    fn visit_variable_expr(&self, expr: &Variable) -> T;
+    fn visit_assign_expr(&mut self, expr: &Assign) -> T;
+    fn visit_binary_expr(&mut self, expr: &Binary) -> T;
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> T;
+    fn visit_literal_expr(&mut self, expr: &Literal) -> T;
+    fn visit_unary_expr(&mut self, expr: &Unary) -> T;
+    fn visit_variable_expr(&mut self, expr: &Variable) -> T;
 }
 
 pub trait Accept<T> {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T;
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T;
 }
 
 #[derive(Clone)]
 pub enum Expr {
+    Assign(Box<Assign>),
     Binary(Box<Binary>),
     Grouping(Box<Grouping>),
     Literal(Box<Literal>),
@@ -23,14 +25,33 @@ pub enum Expr {
 }
 
 impl<T> Accept<T> for Expr {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         match self {
+            Expr::Assign(e) => e.accept(visitor),
             Expr::Binary(e) => e.accept(visitor),
             Expr::Grouping(e) => e.accept(visitor),
             Expr::Literal(e) => e.accept(visitor),
             Expr::Unary(e) => e.accept(visitor),
             Expr::Variable(e) => e.accept(visitor),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct Assign {
+    pub name: Token,
+    pub value: Box<Expr>,
+}
+
+impl Assign {
+    pub fn new(name: Token, value: Box<Expr>) -> Box<Assign> {
+        Box::new(Assign { name, value })
+    }
+}
+
+impl<T> Accept<T> for Assign {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_assign_expr(self)
     }
 }
 
@@ -52,7 +73,7 @@ impl Binary {
 }
 
 impl<T> Accept<T> for Binary {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_binary_expr(self)
     }
 }
@@ -69,7 +90,7 @@ impl Grouping {
 }
 
 impl<T> Accept<T> for Grouping {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_grouping_expr(self)
     }
 }
@@ -86,7 +107,7 @@ impl Literal {
 }
 
 impl<T> Accept<T> for Literal {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_literal_expr(self)
     }
 }
@@ -104,7 +125,7 @@ impl Unary {
 }
 
 impl<T> Accept<T> for Unary {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_unary_expr(self)
     }
 }
@@ -121,7 +142,7 @@ impl Variable {
 }
 
 impl<T> Accept<T> for Variable {
-    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_variable_expr(self)
     }
 }

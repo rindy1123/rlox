@@ -2,8 +2,8 @@ use crate::expr::Expr;
 use crate::scanner::token::Token;
 
 pub trait Visitor<T> {
-    fn visit_expression_stmt(&self, stmt: &Expression) -> T;
-    fn visit_print_stmt(&self, stmt: &Print) -> T;
+    fn visit_expression_stmt(&mut self, stmt: &Expression) -> T;
+    fn visit_print_stmt(&mut self, stmt: &Print) -> T;
     fn visit_var_stmt(&mut self, stmt: &Var) -> T;
 }
 

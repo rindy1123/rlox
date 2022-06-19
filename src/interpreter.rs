@@ -29,18 +29,18 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn evaluate(&self, expr: &Box<Expr>) -> Result<LiteralType, LangError> {
-        expr.accept(self)
+    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LiteralType, LangError> {
+        expr.clone().accept(self)
     }
 }
 
 impl stmt::Visitor<Result<(), LangError>> for Interpreter {
-    fn visit_expression_stmt(&self, stmt: &stmt::Expression) -> Result<(), LangError> {
+    fn visit_expression_stmt(&mut self, stmt: &stmt::Expression) -> Result<(), LangError> {
         self.evaluate(&Box::new(stmt.clone().expression))?;
         Ok(())
     }
 
-    fn visit_print_stmt(&self, stmt: &stmt::Print) -> Result<(), LangError> {
+    fn visit_print_stmt(&mut self, stmt: &stmt::Print) -> Result<(), LangError> {
         let value = self.evaluate(&Box::new(stmt.clone().expression))?;
         println!("{}", stringify_literal(value));
         Ok(())
@@ -55,7 +55,7 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
 }
 
 impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {
-    fn visit_binary_expr(&self, expr: &Binary) -> Result<LiteralType, LangError> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<LiteralType, LangError> {
         let left = self.evaluate(&expr.left)?;
         let right = self.evaluate(&expr.right)?;
         let value = match expr.operator.token_type {
@@ -77,11 +77,11 @@ impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {
         Ok(value)
     }
 
-    fn visit_grouping_expr(&self, expr: &Grouping) -> Result<LiteralType, LangError> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<LiteralType, LangError> {
         self.evaluate(&expr.expression)
     }
 
-    fn visit_unary_expr(&self, expr: &Unary) -> Result<LiteralType, LangError> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<LiteralType, LangError> {
         let right = self.evaluate(&expr.right)?;
         let value = match expr.operator.token_type {
             TokenType::Minus => -right,
@@ -94,12 +94,18 @@ impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {
         Ok(value)
     }
 
-    fn visit_literal_expr(&self, expr: &Literal) -> Result<LiteralType, LangError> {
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<LiteralType, LangError> {
         Ok(expr.value.clone())
     }
 
-    fn visit_variable_expr(&self, expr: &expr::Variable) -> Result<LiteralType, LangError> {
+    fn visit_variable_expr(&mut self, expr: &expr::Variable) -> Result<LiteralType, LangError> {
         self.environment.get(&expr.name)
+    }
+
+    fn visit_assign_expr(&mut self, expr: &expr::Assign) -> Result<LiteralType, LangError> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment.assign(expr.clone().name, value.clone())?;
+        Ok(value)
     }
 }
 

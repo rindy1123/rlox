@@ -1,4 +1,4 @@
-use crate::expr::{Binary, Expr, Grouping, Literal, Unary, Variable};
+use crate::expr::{Assign, Binary, Expr, Grouping, Literal, Unary, Variable};
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
@@ -80,7 +80,27 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, LangError> {
-        self.equality()
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, LangError> {
+        let expr = self.equality()?;
+
+        if self.match_token_type(&vec![TokenType::Equal]) {
+            let equals = self.previous().clone();
+            let value = self.assignment()?;
+
+            if let Expr::Variable(var) = expr {
+                let name = var.name;
+                let assign = Expr::Assign(Assign::new(name, Box::new(value)));
+                return Ok(assign);
+            } else {
+                lang_error::parser_error(&equals, "Expect expression.".to_string());
+                return Err(LangError::ParseError);
+            }
+        }
+
+        Ok(expr)
     }
 
     fn equality(&mut self) -> Result<Expr, LangError> {

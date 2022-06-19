@@ -41,23 +41,13 @@ fn define_visitor(content: &mut String, types: &Vec<&str>, base_name: &str) {
     for type_string in types {
         let struct_name_and_fields: Vec<&str> = type_string.split(';').collect();
         let struct_name = struct_name_and_fields[0].trim();
-        if struct_name == "Var" {
-            content.push_str(&format!(
-                "    fn visit_{}_{}(&mut self, {}: &{}) -> T;\n",
-                struct_name.to_lowercase(),
-                base_name,
-                base_name,
-                struct_name
-            ));
-        } else {
-            content.push_str(&format!(
-                "    fn visit_{}_{}(&self, {}: &{}) -> T;\n",
-                struct_name.to_lowercase(),
-                base_name,
-                base_name,
-                struct_name
-            ));
-        }
+        content.push_str(&format!(
+            "    fn visit_{}_{}(&mut self, {}: &{}) -> T;\n",
+            struct_name.to_lowercase(),
+            base_name,
+            base_name,
+            struct_name
+        ));
     }
     content.push_str("}\n\n");
 }

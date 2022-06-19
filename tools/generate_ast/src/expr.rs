@@ -5,6 +5,7 @@ use std::io::prelude::*;
 pub fn define_ast(output_dir: &str) {
     let base_name = "Expr";
     let types = vec![
+        "Assign; name: Token, value: Box<Expr>",
         "Binary; left: Box<Expr>, operator: Token, right: Box<Expr>",
         "Grouping; expression: Box<Expr>",
         "Literal; value: LiteralType",
@@ -44,7 +45,7 @@ fn define_visitor(content: &mut String, types: &Vec<&str>, base_name: &str) {
         let struct_name_and_fields: Vec<&str> = type_string.split(';').collect();
         let struct_name = struct_name_and_fields[0].trim();
         content.push_str(&format!(
-            "    fn visit_{}_{}(&self, {}: &{}) -> T;\n",
+            "    fn visit_{}_{}(&mut self, {}: &{}) -> T;\n",
             struct_name.to_lowercase(),
             base_name,
             base_name,
@@ -57,7 +58,7 @@ fn define_visitor(content: &mut String, types: &Vec<&str>, base_name: &str) {
 fn define_accept(content: &mut String) {
     content.push_str(
         "pub trait Accept<T> {
-           fn accept(&self, visitor: &impl Visitor<T>) -> T;
+           fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T;
          }
 
         ",
@@ -66,7 +67,7 @@ fn define_accept(content: &mut String) {
 
 fn define_accept_for_enum(content: &mut String, types: &Vec<&str>, base_name: &str) {
     content.push_str(&format!("impl<T> Accept<T> for {} {{\n", base_name));
-    content.push_str("    fn accept(&self, visitor: &impl Visitor<T>) -> T {\n");
+    content.push_str("    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {\n");
     content.push_str("        match self {\n");
     for type_string in types {
         let struct_name = type_string.split(';').collect::<Vec<&str>>()[0].trim();
@@ -94,7 +95,7 @@ fn define_impl_for_each_expr(
     // end of new function
     content.push_str(&format!("impl<T> Accept<T> for {} {{\n", struct_name));
     // start of accept function
-    content.push_str("    fn accept(&self, visitor: &impl Visitor<T>) -> T {\n");
+    content.push_str("    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {\n");
     content.push_str(&format!(
         "        visitor.visit_{}_{}(self)\n",
         struct_name.to_lowercase(),
