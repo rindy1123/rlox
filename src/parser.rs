@@ -1,8 +1,8 @@
-use crate::expr::{Binary, Expr, Grouping, Literal, Unary};
+use crate::expr::{Binary, Expr, Grouping, Literal, Unary, Variable};
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
-use crate::stmt::{Expression, Print, Stmt};
+use crate::stmt::{Expression, Print, Stmt, Var};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -21,10 +21,43 @@ impl Parser {
     pub fn parse(&mut self) -> Result<Vec<Stmt>, LangError> {
         let mut statements: Vec<Stmt> = Vec::new();
         while !self.is_at_end() {
-            let statement = self.statement()?;
+            let statement = self.declaration()?;
             statements.push(statement);
         }
         Ok(statements)
+    }
+
+    fn declaration(&mut self) -> Result<Stmt, LangError> {
+        let result = if self.match_token_type(&vec![TokenType::Var]) {
+            self.var_declaration()
+        } else {
+            self.statement()
+        };
+        if let Err(e) = result {
+            self.synchronize();
+            Err(e)
+        } else {
+            result
+        }
+    }
+
+    fn var_declaration(&mut self) -> Result<Stmt, LangError> {
+        let name = self
+            .consume(TokenType::Identifier, "Expect variable name.")?
+            .clone();
+
+        let initializer = if self.match_token_type(&vec![TokenType::Equal]) {
+            self.expression()?
+        } else {
+            Expr::Literal(Literal::new(LiteralType::Nil))
+        };
+
+        self.consume(
+            TokenType::Semicolon,
+            "Expect ';' after variable declaration.",
+        )?;
+        let var = Var::new(name, initializer);
+        Ok(Stmt::Var(var))
     }
 
     fn statement(&mut self) -> Result<Stmt, LangError> {
@@ -114,7 +147,14 @@ impl Parser {
             return Ok(Expr::Grouping(grouping));
         }
 
-        Err(super::parser::error(self.peek(), "Expect expression."))
+        if self.match_token_type(&vec![TokenType::Identifier]) {
+            let name = self.previous().clone();
+            let var = Variable::new(name);
+            return Ok(Expr::Variable(var));
+        }
+
+        lang_error::parser_error(self.peek(), "Expect expression.".to_string());
+        Err(LangError::ParseError)
     }
 
     fn generate_binary_expr(
@@ -170,13 +210,13 @@ impl Parser {
         self.tokens.get(self.current - 1).unwrap()
     }
 
-    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<(), LangError> {
+    fn consume(&mut self, token_type: TokenType, message: &str) -> Result<&Token, LangError> {
         if self.check(&token_type) {
-            self.advance();
-            return Ok(());
+            return Ok(self.advance());
         }
 
-        Err(super::parser::error(self.peek(), message))
+        lang_error::parser_error(self.peek(), message.to_string());
+        Err(LangError::ParseError)
     }
 
     fn synchronize(&mut self) {
@@ -199,9 +239,4 @@ impl Parser {
             };
         }
     }
-}
-
-pub fn error(token: &Token, message: &str) -> LangError {
-    lang_error::parser_error(token, message.to_string());
-    LangError::ParseError
 }

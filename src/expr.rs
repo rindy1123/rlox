@@ -6,6 +6,7 @@ pub trait Visitor<T> {
     fn visit_grouping_expr(&self, expr: &Grouping) -> T;
     fn visit_literal_expr(&self, expr: &Literal) -> T;
     fn visit_unary_expr(&self, expr: &Unary) -> T;
+    fn visit_variable_expr(&self, expr: &Variable) -> T;
 }
 
 pub trait Accept<T> {
@@ -18,6 +19,7 @@ pub enum Expr {
     Grouping(Box<Grouping>),
     Literal(Box<Literal>),
     Unary(Box<Unary>),
+    Variable(Box<Variable>),
 }
 
 impl<T> Accept<T> for Expr {
@@ -27,6 +29,7 @@ impl<T> Accept<T> for Expr {
             Expr::Grouping(e) => e.accept(visitor),
             Expr::Literal(e) => e.accept(visitor),
             Expr::Unary(e) => e.accept(visitor),
+            Expr::Variable(e) => e.accept(visitor),
         }
     }
 }
@@ -103,5 +106,22 @@ impl Unary {
 impl<T> Accept<T> for Unary {
     fn accept(&self, visitor: &impl Visitor<T>) -> T {
         visitor.visit_unary_expr(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Variable {
+    pub name: Token,
+}
+
+impl Variable {
+    pub fn new(name: Token) -> Box<Variable> {
+        Box::new(Variable { name })
+    }
+}
+
+impl<T> Accept<T> for Variable {
+    fn accept(&self, visitor: &impl Visitor<T>) -> T {
+        visitor.visit_variable_expr(self)
     }
 }

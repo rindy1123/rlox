@@ -1,3 +1,4 @@
+use crate::environment::Environment;
 use crate::expr::{self, Accept as AcceptExpr, Binary, Expr, Grouping, Literal, Unary};
 use crate::lang_error::LangError;
 use crate::scanner::literal_type::{self, LiteralType};
@@ -5,21 +6,26 @@ use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
 use substring::Substring;
 
-pub struct Interpreter {}
+#[derive(Default)]
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        Interpreter {}
+        Interpreter {
+            ..Default::default()
+        }
     }
 
-    pub fn interpret(&self, statements: Vec<Stmt>) -> Result<(), LangError> {
+    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), LangError> {
         for statement in statements {
             self.execute(statement)?;
         }
         Ok(())
     }
 
-    fn execute(&self, statement: Stmt) -> Result<(), LangError> {
+    fn execute(&mut self, statement: Stmt) -> Result<(), LangError> {
         statement.accept(self)
     }
 
@@ -37,6 +43,13 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     fn visit_print_stmt(&self, stmt: &stmt::Print) -> Result<(), LangError> {
         let value = self.evaluate(&Box::new(stmt.clone().expression))?;
         println!("{}", stringify_literal(value));
+        Ok(())
+    }
+
+    fn visit_var_stmt(&mut self, stmt: &stmt::Var) -> Result<(), LangError> {
+        let cloned_stmt = stmt.clone();
+        let value = self.evaluate(&Box::new(cloned_stmt.initializer))?;
+        self.environment.define(cloned_stmt.name.lexeme, value);
         Ok(())
     }
 }
@@ -83,6 +96,10 @@ impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {
 
     fn visit_literal_expr(&self, expr: &Literal) -> Result<LiteralType, LangError> {
         Ok(expr.value.clone())
+    }
+
+    fn visit_variable_expr(&self, expr: &expr::Variable) -> Result<LiteralType, LangError> {
+        self.environment.get(&expr.name)
     }
 }
 
