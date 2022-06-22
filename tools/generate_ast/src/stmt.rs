@@ -5,6 +5,7 @@ use std::io::prelude::*;
 pub fn define_ast(output_dir: &str) {
     let base_name = "Stmt";
     let types = vec![
+        "Block; statements: Vec<Stmt>",
         "Expression; expression: Expr",
         "Print; expression: Expr",
         "Var; name: Token, initializer: Expr",

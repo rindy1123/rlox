@@ -20,13 +20,30 @@ impl Interpreter {
 
     pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), LangError> {
         for statement in statements {
-            self.execute(statement)?;
+            self.execute(&statement)?;
         }
         Ok(())
     }
 
-    fn execute(&mut self, statement: Stmt) -> Result<(), LangError> {
+    fn execute(&mut self, statement: &Stmt) -> Result<(), LangError> {
         statement.accept(self)
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: &Vec<Stmt>,
+        environment: Environment,
+    ) -> Result<(), LangError> {
+        let previous_environment = self.environment.clone();
+        self.environment = environment;
+        let result = || -> Result<(), LangError> {
+            for statement in statements {
+                self.execute(statement)?;
+            }
+            Ok(())
+        }();
+        self.environment = previous_environment;
+        result
     }
 
     fn evaluate(&mut self, expr: &Box<Expr>) -> Result<LiteralType, LangError> {
@@ -35,6 +52,12 @@ impl Interpreter {
 }
 
 impl stmt::Visitor<Result<(), LangError>> for Interpreter {
+    fn visit_block_stmt(&mut self, stmt: &stmt::Block) -> Result<(), LangError> {
+        let previous_environment = Some(Box::new(self.environment.clone()));
+        self.execute_block(&stmt.statements, Environment::new(previous_environment))?;
+        Ok(())
+    }
+
     fn visit_expression_stmt(&mut self, stmt: &stmt::Expression) -> Result<(), LangError> {
         self.evaluate(&Box::new(stmt.clone().expression))?;
         Ok(())

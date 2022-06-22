@@ -2,6 +2,7 @@ use crate::expr::Expr;
 use crate::scanner::token::Token;
 
 pub trait Visitor<T> {
+    fn visit_block_stmt(&mut self, stmt: &Block) -> T;
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> T;
     fn visit_print_stmt(&mut self, stmt: &Print) -> T;
     fn visit_var_stmt(&mut self, stmt: &Var) -> T;
@@ -13,6 +14,7 @@ pub trait Accept<T> {
 
 #[derive(Clone)]
 pub enum Stmt {
+    Block(Block),
     Expression(Expression),
     Print(Print),
     Var(Var),
@@ -21,10 +23,28 @@ pub enum Stmt {
 impl<T> Accept<T> for Stmt {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
         match self {
+            Stmt::Block(e) => e.accept(visitor),
             Stmt::Expression(e) => e.accept(visitor),
             Stmt::Print(e) => e.accept(visitor),
             Stmt::Var(e) => e.accept(visitor),
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct Block {
+    pub statements: Vec<Stmt>,
+}
+
+impl Block {
+    pub fn new(statements: Vec<Stmt>) -> Block {
+        Block { statements }
+    }
+}
+
+impl<T> Accept<T> for Block {
+    fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_block_stmt(self)
     }
 }
 
