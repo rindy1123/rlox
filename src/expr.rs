@@ -19,9 +19,9 @@ pub enum Expr {
     Assign(Box<Assign>),
     Binary(Box<Binary>),
     Grouping(Box<Grouping>),
-    Literal(Box<Literal>),
+    Literal(Literal),
     Unary(Box<Unary>),
-    Variable(Box<Variable>),
+    Variable(Variable),
 }
 
 impl<T> Accept<T> for Expr {
@@ -101,8 +101,8 @@ pub struct Literal {
 }
 
 impl Literal {
-    pub fn new(value: LiteralType) -> Box<Literal> {
-        Box::new(Literal { value })
+    pub fn new(value: LiteralType) -> Literal {
+        Literal { value }
     }
 }
 
@@ -136,8 +136,8 @@ pub struct Variable {
 }
 
 impl Variable {
-    pub fn new(name: Token) -> Box<Variable> {
-        Box::new(Variable { name })
+    pub fn new(name: Token) -> Variable {
+        Variable { name }
     }
 }
 

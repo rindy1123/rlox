@@ -1,74 +1,170 @@
-const BOX_REQUIRED: [&str; 7] = [
-    "Assign", "Binary", "Grouping", "Literal", "Unary", "Variable", "If",
-];
+use crate::expr;
 
-pub fn define_enum(content: &mut String, types: &Vec<&str>, base_name: &str) {
-    content.push_str("#[derive(Clone)]\n");
-    content.push_str(&format!("pub enum {} {{\n", base_name));
-    for type_string in types {
+const BOX_REQUIRED: [&str; 5] = ["Assign", "Binary", "Grouping", "Unary", "If"];
+
+pub fn define_enum(types: Vec<String>, base_name: String) -> String {
+    let fields: String = types.iter().fold(String::new(), |acc, type_string| {
         let struct_name = type_string.split(';').collect::<Vec<&str>>()[0].trim();
-        if BOX_REQUIRED.contains(&struct_name) {
-            content.push_str(&format!("    {}(Box<{}>),\n", struct_name, struct_name))
+        let field = if BOX_REQUIRED.contains(&struct_name) {
+            format!("{struct_name}(Box<{struct_name}>),\n")
         } else {
-            content.push_str(&format!("    {}({}),\n", struct_name, struct_name))
-        }
-    }
-    content.push_str("}\n\n");
+            format!("{struct_name}({struct_name}),\n")
+        };
+        acc + &field
+    });
+    format!(
+        "
+    #[derive(Clone)]
+    pub enum {} {{
+        {}
+    }}
+
+    ",
+        base_name, fields
+    )
 }
 
-pub fn define_struct(content: &mut String, struct_name: &str, fields: &str) {
-    content.push_str("#[derive(Clone)]\n");
-    content.push_str(&format!("pub struct {} {{\n", struct_name));
-    for field in split_fields(fields) {
-        let field = field.trim();
-        content.push_str(&format!("    pub {},\n", field));
-    }
-    content.push_str("}\n\n");
+pub fn define_visitor(types: Vec<String>, base_name: String) -> String {
+    let signatures: String = types.iter().fold(String::new(), |acc, type_string| {
+        let struct_name_and_fields: Vec<&str> = type_string.split(';').collect();
+        let struct_name = struct_name_and_fields[0].trim();
+        let lowered_struct_name = struct_name.to_lowercase();
+        acc + &format!(
+            "fn visit_{lowered_struct_name}_{base_name}(&mut self, {base_name}: &{struct_name}) -> T;\n"
+        )
+    });
+    format!(
+        "pub trait Visitor<T> {{
+            {signatures}
+        }}
+
+        "
+    )
 }
 
-pub fn define_new_function(content: &mut String, struct_name: &str, fields: &str) {
-    let function = if BOX_REQUIRED.contains(&struct_name) {
+pub fn define_accept(base_name: String) -> String {
+    let first_param = get_accept_first_param(base_name);
+    format!(
+        "pub trait Accept<T> {{
+             fn accept({first_param}, visitor: &mut impl Visitor<T>) -> T;
+         }}
+
+    "
+    )
+}
+
+pub fn define_struct(struct_name: String, fields: String) -> String {
+    let fields: String = fields.split(',').fold(String::new(), |acc, field| {
+        acc + &format!("pub {},\n", field.trim())
+    });
+    format!(
+        "
+    #[derive(Clone)]
+    pub struct {struct_name} {{
+        {fields}
+    }}
+
+    "
+    )
+}
+
+pub fn define_new_function(struct_name: String, fields: String) -> String {
+    if BOX_REQUIRED.contains(&struct_name.as_str()) {
         new_boxed_function(struct_name, fields)
     } else {
         new_function(struct_name, fields)
-    };
-    content.push_str(&function)
-}
-
-fn new_boxed_function(struct_name: &str, fields: &str) -> String {
-    let mut content = String::new();
-    content.push_str(&format!(
-        "    pub fn new({}) -> Box<{}> {{\n",
-        fields, struct_name
-    ));
-    content.push_str("        Box::new(\n");
-    content.push_str(&format!("            {} {{\n", struct_name));
-    for field in split_fields(fields) {
-        let argument = field.split(':').collect::<Vec<&str>>()[0].trim();
-        content.push_str(&format!("                {},\n", argument));
     }
-    content.push_str("            }\n");
-    content.push_str("        )\n");
-    content.push_str("    }\n");
-    content
 }
 
-fn new_function(struct_name: &str, fields: &str) -> String {
-    let mut content = String::new();
-    content.push_str(&format!(
-        "    pub fn new({}) -> {} {{\n",
-        fields, struct_name
-    ));
-    content.push_str(&format!("        {} {{\n", struct_name));
-    for field in split_fields(fields) {
+fn new_boxed_function(struct_name: String, fields: String) -> String {
+    let arguments: String = fields.split(',').fold(String::new(), |acc, field| {
         let argument = field.split(':').collect::<Vec<&str>>()[0].trim();
-        content.push_str(&format!("            {},\n", argument));
-    }
-    content.push_str("        }\n");
-    content.push_str("    }\n");
-    content
+        acc + &format!("{},\n", argument)
+    });
+    format!(
+        "
+        pub fn new({fields}) -> Box<{struct_name}> {{
+            Box::new(
+                {struct_name} {{\n
+                    {arguments}
+                }}
+            )
+        }}
+
+        "
+    )
 }
 
-fn split_fields(fields: &str) -> Vec<&str> {
-    fields.split(',').collect()
+fn new_function(struct_name: String, fields: String) -> String {
+    let arguments: String = fields.split(',').fold(String::new(), |acc, field| {
+        let argument = field.split(':').collect::<Vec<&str>>()[0].trim();
+        acc + &format!("{},\n", argument)
+    });
+    format!(
+        "
+        pub fn new({fields}) -> {struct_name} {{
+            {struct_name} {{\n
+                {arguments}
+            }}
+        }}
+
+        "
+    )
+}
+
+pub fn define_structs(types: Vec<String>, base_name: String) -> String {
+    types.iter().fold(String::new(), |acc, type_string| {
+        let struct_name_and_fields: Vec<&str> = type_string.split(';').collect();
+        let struct_name = struct_name_and_fields[0].trim().to_string();
+        let fields = struct_name_and_fields[1].trim().to_string();
+        let struct_in_string = define_struct(struct_name.clone(), fields.clone());
+        let new_function = define_new_function(struct_name.clone(), fields);
+        let lowered_struct_name = struct_name.to_lowercase();
+        let lowered_base_name = base_name.to_lowercase();
+        let first_param = get_accept_first_param(base_name.clone());
+        acc + &format!(
+            "
+            {struct_in_string}
+
+            impl {struct_name} {{
+                {new_function}
+            }}
+
+            impl<T> Accept<T> for {struct_name} {{
+                fn accept({first_param}, visitor: &mut impl Visitor<T>) -> T {{
+                    visitor.visit_{lowered_struct_name}_{lowered_base_name}(self)
+                }}
+            }}
+
+            "
+        )
+    })
+}
+
+pub fn define_accept_for_enum(types: Vec<String>, base_name: String) -> String {
+    let accept: String = types.iter().fold(String::new(), |acc, type_string| {
+        let struct_name = type_string.split(';').collect::<Vec<&str>>()[0].trim();
+        acc + &format!("{base_name}::{struct_name}(e) => e.accept(visitor),\n")
+    });
+    let first_param = get_accept_first_param(base_name.clone());
+    format!(
+        "
+        impl<T> Accept<T> for {base_name} {{
+            fn accept({first_param}, visitor: &mut impl Visitor<T>) -> T {{
+                match self {{
+                    {accept}
+                }}
+            }}
+        }}
+
+        "
+    )
+}
+
+fn get_accept_first_param(base_name: String) -> String {
+    match base_name.as_str() {
+        expr::BASE_NAME => "&mut self",
+        _ => "&self",
+    }
+    .to_string()
 }
