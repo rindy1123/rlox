@@ -12,20 +12,10 @@ fn main() {
         println!("Usage: generate_ast <output directory>");
         exit(64)
     }
-    let output_dir = if args.len() == 1 {
-        "../../src"
-    } else {
-        &args[1]
-    };
+    let output_dir = if args.len() == 1 { "src" } else { &args[1] };
     fs::create_dir_all(output_dir).unwrap();
     expr::define_ast(output_dir);
     stmt::define_ast(output_dir);
-    Command::new("cargo")
-        .args(&[
-            "fmt",
-            "--manifest-path",
-            &format!("{}/../Cargo.toml", output_dir),
-        ])
-        .output()
-        .unwrap();
+    Command::new("cargo").args(&["fmt"]).output().unwrap();
+    println!("Generated");
 }
