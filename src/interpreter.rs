@@ -63,6 +63,16 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
         Ok(())
     }
 
+    fn visit_if_stmt(&mut self, stmt: &stmt::If) -> Result<(), LangError> {
+        let condition = self.evaluate(&Box::new(stmt.condition.clone()))?;
+        if !!condition == LiteralType::True {
+            self.execute(&stmt.then_statement)?;
+        } else if let Some(else_statement) = stmt.else_statement.clone() {
+            self.execute(&else_statement)?;
+        }
+        Ok(())
+    }
+
     fn visit_print_stmt(&mut self, stmt: &stmt::Print) -> Result<(), LangError> {
         let value = self.evaluate(&Box::new(stmt.clone().expression))?;
         println!("{}", stringify_literal(value));

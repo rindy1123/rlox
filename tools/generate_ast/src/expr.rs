@@ -89,7 +89,7 @@ fn define_impl_for_each_expr(
 ) {
     content.push_str(&format!("impl {} {{\n", struct_name));
     // start of new function
-    define_new_function(content, struct_name, fields);
+    utils::define_new_function(content, struct_name, fields);
     content.push_str("}\n");
     content.push_str("\n");
     // end of new function
@@ -104,20 +104,4 @@ fn define_impl_for_each_expr(
     content.push_str("    }\n");
     // end of accept function
     content.push_str("}\n\n");
-}
-
-fn define_new_function(content: &mut String, struct_name: &str, fields: &str) {
-    content.push_str(&format!(
-        "    pub fn new({}) -> Box<{}> {{\n",
-        fields, struct_name
-    ));
-    content.push_str("        Box::new(\n");
-    content.push_str(&format!("            {} {{\n", struct_name));
-    for field in utils::split_fields(fields) {
-        let argument = field.split(':').collect::<Vec<&str>>()[0].trim();
-        content.push_str(&format!("                {},\n", argument));
-    }
-    content.push_str("            }\n");
-    content.push_str("        )\n");
-    content.push_str("    }\n");
 }

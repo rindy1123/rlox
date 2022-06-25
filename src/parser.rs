@@ -2,7 +2,7 @@ use crate::expr::{Assign, Binary, Expr, Grouping, Literal, Unary, Variable};
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
-use crate::stmt::{Block, Expression, Print, Stmt, Var};
+use crate::stmt::{Block, Expression, If, Print, Stmt, Var};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -63,6 +63,9 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, LangError> {
+        if self.match_token_type(&vec![TokenType::If]) {
+            return self.if_statement();
+        }
         if self.match_token_type(&vec![TokenType::Print]) {
             return self.print_statement();
         }
@@ -72,6 +75,20 @@ impl Parser {
             return Ok(block);
         }
         self.expression_statement()
+    }
+
+    fn if_statement(&mut self) -> Result<Stmt, LangError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after value.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after value.")?;
+        let then_branch = Box::new(self.statement()?);
+        let else_branch = if self.match_token_type(&vec![TokenType::Else]) {
+            Some(Box::new(self.statement()?))
+        } else {
+            None
+        };
+
+        Ok(Stmt::If(If::new(condition, then_branch, else_branch)))
     }
 
     fn print_statement(&mut self) -> Result<Stmt, LangError> {

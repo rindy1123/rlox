@@ -7,6 +7,7 @@ pub fn define_ast(output_dir: &str) {
     let types = vec![
         "Block; statements: Vec<Stmt>",
         "Expression; expression: Expr",
+        "If; condition: Expr, then_statement: Box<Stmt>, else_statement: Option<Box<Stmt>>",
         "Print; expression: Expr",
         "Var; name: Token, initializer: Expr",
     ];
@@ -87,7 +88,7 @@ fn define_impl_for_each_stmt(
 ) {
     content.push_str(&format!("impl {} {{\n", struct_name));
     // start of new function
-    define_new_function(content, struct_name, fields);
+    utils::define_new_function(content, struct_name, fields);
     content.push_str("}\n");
     content.push_str("\n");
     // end of new function
@@ -102,18 +103,4 @@ fn define_impl_for_each_stmt(
     content.push_str("    }\n");
     // end of accept function
     content.push_str("}\n\n");
-}
-
-fn define_new_function(content: &mut String, struct_name: &str, fields: &str) {
-    content.push_str(&format!(
-        "    pub fn new({}) -> {} {{\n",
-        fields, struct_name
-    ));
-    content.push_str(&format!("        {} {{\n", struct_name));
-    for field in utils::split_fields(fields) {
-        let argument = field.split(':').collect::<Vec<&str>>()[0].trim();
-        content.push_str(&format!("            {},\n", argument));
-    }
-    content.push_str("        }\n");
-    content.push_str("    }\n");
 }
