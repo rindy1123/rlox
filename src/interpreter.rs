@@ -65,7 +65,7 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
 
     fn visit_if_stmt(&mut self, stmt: &stmt::If) -> Result<(), LangError> {
         let condition = self.evaluate(&Box::new(stmt.condition.clone()))?;
-        if !!condition == LiteralType::True {
+        if literal_type::is_truthy(condition) {
             self.execute(&stmt.then_statement)?;
         } else if let Some(else_statement) = stmt.else_statement.clone() {
             self.execute(&else_statement)?;
@@ -112,6 +112,21 @@ impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {
 
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<LiteralType, LangError> {
         self.evaluate(&expr.expression)
+    }
+
+    fn visit_logical_expr(&mut self, expr: &expr::Logical) -> Result<LiteralType, LangError> {
+        let left = self.evaluate(&expr.left)?;
+        if let TokenType::Or = expr.operator.token_type {
+            if literal_type::is_truthy(left.clone()) {
+                return Ok(left);
+            }
+        } else {
+            if !literal_type::is_truthy(left.clone()) {
+                return Ok(left);
+            }
+        }
+
+        self.evaluate(&expr.right)
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<LiteralType, LangError> {

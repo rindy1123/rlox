@@ -1,6 +1,6 @@
 use crate::expr;
 
-const BOX_REQUIRED: [&str; 5] = ["Assign", "Binary", "Grouping", "Unary", "If"];
+const BOX_REQUIRED: [&str; 6] = ["Assign", "Binary", "Grouping", "Logical", "Unary", "If"];
 
 pub fn define_enum(types: Vec<String>, base_name: String) -> String {
     let fields: String = types.iter().fold(String::new(), |acc, type_string| {

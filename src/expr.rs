@@ -6,6 +6,7 @@ pub trait Visitor<T> {
     fn visit_binary_expr(&mut self, expr: &Binary) -> T;
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> T;
     fn visit_literal_expr(&mut self, expr: &Literal) -> T;
+    fn visit_logical_expr(&mut self, expr: &Logical) -> T;
     fn visit_unary_expr(&mut self, expr: &Unary) -> T;
     fn visit_variable_expr(&mut self, expr: &Variable) -> T;
 }
@@ -20,6 +21,7 @@ pub enum Expr {
     Binary(Box<Binary>),
     Grouping(Box<Grouping>),
     Literal(Literal),
+    Logical(Box<Logical>),
     Unary(Box<Unary>),
     Variable(Variable),
 }
@@ -31,6 +33,7 @@ impl<T> Accept<T> for Expr {
             Expr::Binary(e) => e.accept(visitor),
             Expr::Grouping(e) => e.accept(visitor),
             Expr::Literal(e) => e.accept(visitor),
+            Expr::Logical(e) => e.accept(visitor),
             Expr::Unary(e) => e.accept(visitor),
             Expr::Variable(e) => e.accept(visitor),
         }
@@ -109,6 +112,29 @@ impl Literal {
 impl<T> Accept<T> for Literal {
     fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_literal_expr(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Logical {
+    pub left: Box<Expr>,
+    pub operator: Token,
+    pub right: Box<Expr>,
+}
+
+impl Logical {
+    pub fn new(left: Box<Expr>, operator: Token, right: Box<Expr>) -> Box<Logical> {
+        Box::new(Logical {
+            left,
+            operator,
+            right,
+        })
+    }
+}
+
+impl<T> Accept<T> for Logical {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_logical_expr(self)
     }
 }
 

@@ -1,4 +1,4 @@
-use crate::expr::{Assign, Binary, Expr, Grouping, Literal, Unary, Variable};
+use crate::expr::{Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Variable};
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
@@ -120,7 +120,7 @@ impl Parser {
     }
 
     fn assignment(&mut self) -> Result<Expr, LangError> {
-        let expr = self.equality()?;
+        let expr = self.or()?;
 
         if self.match_token_type(&vec![TokenType::Equal]) {
             let equals = self.previous().clone();
@@ -137,6 +137,16 @@ impl Parser {
         }
 
         Ok(expr)
+    }
+
+    fn or(&mut self) -> Result<Expr, LangError> {
+        let token_types = vec![TokenType::Or];
+        self.generate_logical_expr(token_types, Parser::and)
+    }
+
+    fn and(&mut self) -> Result<Expr, LangError> {
+        let token_types = vec![TokenType::And];
+        self.generate_logical_expr(token_types, Parser::equality)
     }
 
     fn equality(&mut self) -> Result<Expr, LangError> {
@@ -211,6 +221,23 @@ impl Parser {
 
         lang_error::parser_error(self.peek(), "Expect expression.".to_string());
         Err(LangError::ParseError)
+    }
+
+    fn generate_logical_expr(
+        &mut self,
+        token_types: Vec<TokenType>,
+        precedence: fn(&mut Self) -> Result<Expr, LangError>,
+    ) -> Result<Expr, LangError> {
+        let mut expr = precedence(self)?;
+
+        while self.match_token_type(&token_types) {
+            let operator = self.previous().clone();
+            let right = precedence(self)?;
+            let logical = Logical::new(Box::new(expr), operator, Box::new(right));
+            let new_expr = Expr::Logical(logical);
+            expr = new_expr;
+        }
+        Ok(expr)
     }
 
     fn generate_binary_expr(

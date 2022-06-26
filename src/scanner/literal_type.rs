@@ -19,6 +19,14 @@ pub fn convert_bool_to_literal_bool(b: bool) -> LiteralType {
     }
 }
 
+pub fn is_truthy(literal_type: LiteralType) -> bool {
+    if let LiteralType::True = !!literal_type {
+        true
+    } else {
+        false
+    }
+}
+
 pub mod comparison {
     use super::LiteralType;
 
