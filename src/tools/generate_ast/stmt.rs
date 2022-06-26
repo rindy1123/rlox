@@ -12,6 +12,7 @@ pub fn define_ast(output_dir: &str) {
             .to_string(),
         "Print; expression: Expr".to_string(),
         "Var; name: Token, initializer: Expr".to_string(),
+        "While; condition: Expr, body: Box<Stmt>".to_string(),
     ];
     let path = format!("{}/{}.rs", output_dir, BASE_NAME.to_lowercase());
     let mut file = File::create(&path).unwrap();

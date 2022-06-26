@@ -85,6 +85,13 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
         self.environment.define(cloned_stmt.name.lexeme, value);
         Ok(())
     }
+
+    fn visit_while_stmt(&mut self, stmt: &stmt::While) -> Result<(), LangError> {
+        while literal_type::is_truthy(self.evaluate(&Box::new(stmt.condition.clone()))?) {
+            self.execute(&stmt.body)?;
+        }
+        Ok(())
+    }
 }
 
 impl expr::Visitor<Result<LiteralType, LangError>> for Interpreter {

@@ -7,6 +7,7 @@ pub trait Visitor<T> {
     fn visit_if_stmt(&mut self, stmt: &If) -> T;
     fn visit_print_stmt(&mut self, stmt: &Print) -> T;
     fn visit_var_stmt(&mut self, stmt: &Var) -> T;
+    fn visit_while_stmt(&mut self, stmt: &While) -> T;
 }
 
 pub trait Accept<T> {
@@ -20,6 +21,7 @@ pub enum Stmt {
     If(Box<If>),
     Print(Print),
     Var(Var),
+    While(Box<While>),
 }
 
 impl<T> Accept<T> for Stmt {
@@ -30,6 +32,7 @@ impl<T> Accept<T> for Stmt {
             Stmt::If(e) => e.accept(visitor),
             Stmt::Print(e) => e.accept(visitor),
             Stmt::Var(e) => e.accept(visitor),
+            Stmt::While(e) => e.accept(visitor),
         }
     }
 }
@@ -127,5 +130,23 @@ impl Var {
 impl<T> Accept<T> for Var {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_var_stmt(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct While {
+    pub condition: Expr,
+    pub body: Box<Stmt>,
+}
+
+impl While {
+    pub fn new(condition: Expr, body: Box<Stmt>) -> Box<While> {
+        Box::new(While { condition, body })
+    }
+}
+
+impl<T> Accept<T> for While {
+    fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_while_stmt(self)
     }
 }

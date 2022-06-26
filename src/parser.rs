@@ -2,7 +2,7 @@ use crate::expr::{Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Varia
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
-use crate::stmt::{Block, Expression, If, Print, Stmt, Var};
+use crate::stmt::{Block, Expression, If, Print, Stmt, Var, While};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -69,6 +69,9 @@ impl Parser {
         if self.match_token_type(&vec![TokenType::Print]) {
             return self.print_statement();
         }
+        if self.match_token_type(&vec![TokenType::While]) {
+            return self.while_statement();
+        }
         if self.match_token_type(&vec![TokenType::LeftBrace]) {
             let statements = self.block()?;
             let block = Stmt::Block(Block::new(statements));
@@ -95,6 +98,15 @@ impl Parser {
         let value = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::Print(Print::new(value)))
+    }
+
+    fn while_statement(&mut self) -> Result<Stmt, LangError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after value.")?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RightParen, "Expect ')' after value.")?;
+        let body = Box::new(self.statement()?);
+
+        Ok(Stmt::While(While::new(condition, body)))
     }
 
     fn block(&mut self) -> Result<Statements, LangError> {
