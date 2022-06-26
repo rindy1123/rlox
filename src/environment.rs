@@ -7,7 +7,7 @@ use crate::{
 
 #[derive(Default, Clone)]
 pub struct Environment {
-    enclosing: Option<Box<Environment>>,
+    pub enclosing: Option<Box<Environment>>,
     values: HashMap<String, LiteralType>,
 }
 
@@ -48,5 +48,12 @@ impl Environment {
 
         let message = format!("Undefined variable '{}'.", name.lexeme);
         Err(LangError::RuntimeError(message, name.clone()))
+    }
+
+    pub fn get_parent_environment(&self) -> Option<Self> {
+        match self.clone().enclosing {
+            Some(env) => Some(*env),
+            _ => None,
+        }
     }
 }
