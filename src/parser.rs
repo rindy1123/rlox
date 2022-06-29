@@ -66,6 +66,9 @@ impl Parser {
         if self.match_token_type(&vec![TokenType::If]) {
             return self.if_statement();
         }
+        if self.match_token_type(&vec![TokenType::For]) {
+            return self.for_statement();
+        }
         if self.match_token_type(&vec![TokenType::Print]) {
             return self.print_statement();
         }
@@ -92,6 +95,48 @@ impl Parser {
         };
 
         Ok(Stmt::If(If::new(condition, then_branch, else_branch)))
+    }
+
+    fn for_statement(&mut self) -> Result<Stmt, LangError> {
+        self.consume(TokenType::LeftParen, "Expect '(' after value.")?;
+        let initializer = if self.match_token_type(&vec![TokenType::Semicolon]) {
+            None
+        } else if self.match_token_type(&vec![TokenType::Var]) {
+            Some(self.var_declaration()?)
+        } else {
+            Some(self.expression_statement()?)
+        };
+        let condition = if self.check(&TokenType::Semicolon) {
+            Expr::Literal(Literal::new(LiteralType::True))
+        } else {
+            self.expression()?
+        };
+        self.consume(TokenType::Semicolon, "Expect ';' after loop condition.")?;
+        let increment = if self.check(&TokenType::RightParen) {
+            None
+        } else {
+            Some(self.expression()?)
+        };
+        self.consume(TokenType::RightParen, "Expect ')' after for clauses.")?;
+        let body = self.statement()?;
+        let for_loop_with_increment = if let Some(expr) = increment {
+            let statements = vec![body, Stmt::Expression(Expression::new(expr))];
+            let block = Block::new(statements);
+            Stmt::Block(block)
+        } else {
+            body
+        };
+        let while_loop = While::new(condition, Box::new(for_loop_with_increment));
+        let for_loop_with_condition = Stmt::While(while_loop);
+        let for_loop_with_initializer = if let Some(statement) = initializer {
+            let statements = vec![statement, for_loop_with_condition];
+            let block = Block::new(statements);
+            Stmt::Block(block)
+        } else {
+            for_loop_with_condition
+        };
+
+        Ok(for_loop_with_initializer)
     }
 
     fn print_statement(&mut self) -> Result<Stmt, LangError> {
