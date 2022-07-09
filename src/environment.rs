@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
 use crate::{
-    lang_error::LangError,
-    scanner::{literal_type::LiteralType, token::Token},
+    lang_error::LangError, scanner::token::Token, user_definable_object::UserDefinableObject,
 };
 
 #[derive(Default, Clone)]
 pub struct Environment {
     pub enclosing: Option<Box<Environment>>,
-    values: HashMap<String, LiteralType>,
+    values: HashMap<String, UserDefinableObject>,
 }
 
 impl Environment {
@@ -19,11 +18,11 @@ impl Environment {
         }
     }
 
-    pub fn define(&mut self, name: String, value: LiteralType) {
+    pub fn define(&mut self, name: String, value: UserDefinableObject) {
         self.values.insert(name, value);
     }
 
-    pub fn get(&self, name: &Token) -> Result<LiteralType, LangError> {
+    pub fn get(&self, name: &Token) -> Result<UserDefinableObject, LangError> {
         if let Some(value) = self.values.get(&name.lexeme) {
             return Ok(value.clone());
         }
@@ -36,7 +35,7 @@ impl Environment {
         Err(LangError::RuntimeError(message, name.clone()))
     }
 
-    pub fn assign(&mut self, name: Token, value: LiteralType) -> Result<(), LangError> {
+    pub fn assign(&mut self, name: Token, value: UserDefinableObject) -> Result<(), LangError> {
         if self.values.contains_key(&name.lexeme) {
             self.values.insert(name.lexeme, value);
             return Ok(());

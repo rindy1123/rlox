@@ -8,6 +8,7 @@ pub fn define_ast(output_dir: &str) {
     let types = vec![
         "Assign; name: Token, value: Box<Expr>".to_string(),
         "Binary; left: Box<Expr>, operator: Token, right: Box<Expr>".to_string(),
+        "Call; callee: Box<Expr>, paren: Token, arguments: Vec<Expr>".to_string(),
         "Grouping; expression: Box<Expr>".to_string(),
         "Literal; value: LiteralType".to_string(),
         "Logical; left: Box<Expr>, operator: Token, right: Box<Expr>".to_string(),

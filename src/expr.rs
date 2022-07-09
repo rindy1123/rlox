@@ -4,6 +4,7 @@ use crate::scanner::token::Token;
 pub trait Visitor<T> {
     fn visit_assign_expr(&mut self, expr: &Assign) -> T;
     fn visit_binary_expr(&mut self, expr: &Binary) -> T;
+    fn visit_call_expr(&mut self, expr: &Call) -> T;
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> T;
     fn visit_literal_expr(&mut self, expr: &Literal) -> T;
     fn visit_logical_expr(&mut self, expr: &Logical) -> T;
@@ -19,6 +20,7 @@ pub trait Accept<T> {
 pub enum Expr {
     Assign(Box<Assign>),
     Binary(Box<Binary>),
+    Call(Box<Call>),
     Grouping(Box<Grouping>),
     Literal(Literal),
     Logical(Box<Logical>),
@@ -31,6 +33,7 @@ impl<T> Accept<T> for Expr {
         match self {
             Expr::Assign(e) => e.accept(visitor),
             Expr::Binary(e) => e.accept(visitor),
+            Expr::Call(e) => e.accept(visitor),
             Expr::Grouping(e) => e.accept(visitor),
             Expr::Literal(e) => e.accept(visitor),
             Expr::Logical(e) => e.accept(visitor),
@@ -78,6 +81,29 @@ impl Binary {
 impl<T> Accept<T> for Binary {
     fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_binary_expr(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Call {
+    pub callee: Box<Expr>,
+    pub paren: Token,
+    pub arguments: Vec<Expr>,
+}
+
+impl Call {
+    pub fn new(callee: Box<Expr>, paren: Token, arguments: Vec<Expr>) -> Box<Call> {
+        Box::new(Call {
+            callee,
+            paren,
+            arguments,
+        })
+    }
+}
+
+impl<T> Accept<T> for Call {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_call_expr(self)
     }
 }
 

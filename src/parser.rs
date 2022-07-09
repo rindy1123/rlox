@@ -1,4 +1,4 @@
-use crate::expr::{Assign, Binary, Expr, Grouping, Literal, Logical, Unary, Variable};
+use crate::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable};
 use crate::lang_error::{self, LangError};
 use crate::scanner::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
@@ -11,6 +11,8 @@ pub struct Parser {
 }
 
 type Statements = Vec<Stmt>;
+
+const MAX_NUM_OF_ARGS: usize = 255;
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Parser {
@@ -240,7 +242,42 @@ impl Parser {
             return Ok(Expr::Unary(unary));
         }
 
-        self.primary()
+        self.call()
+    }
+
+    fn call(&mut self) -> Result<Expr, LangError> {
+        let primary = self.primary()?;
+
+        let mut expr = primary;
+        loop {
+            if self.match_token_type(&vec![TokenType::LeftParen]) {
+                expr = self.finish_call(expr.clone())?;
+            } else {
+                break;
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn finish_call(&mut self, callee: Expr) -> Result<Expr, LangError> {
+        let mut arguments = Vec::new();
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                let argument = self.expression()?;
+                arguments.push(argument);
+                if !self.match_token_type(&vec![TokenType::Comma]) {
+                    break;
+                }
+            }
+        }
+        if arguments.len() >= MAX_NUM_OF_ARGS {
+            let error_message = format!("Can't have more than {} arguments", MAX_NUM_OF_ARGS);
+            lang_error::parser_error(self.peek(), error_message);
+        }
+        let paren = self.consume(TokenType::RightParen, "Expect ')' after arguments.")?;
+        let call = Call::new(Box::new(callee), paren.clone(), arguments);
+        Ok(Expr::Call(call))
     }
 
     fn primary(&mut self) -> Result<Expr, LangError> {
