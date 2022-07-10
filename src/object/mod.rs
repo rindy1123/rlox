@@ -1,12 +1,14 @@
 pub mod literal_type;
 pub mod lox_function;
 
+use std::fmt::Debug;
+
 use crate::{interpreter::Interpreter, lang_error::LangError};
 
 use self::literal_type::LiteralType;
 
 /// Values and Callable Objects that a user can define
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Object {
     Callable(Box<dyn LoxCallable>),
     Value(LiteralType),
@@ -47,5 +49,11 @@ where
 impl Clone for Box<dyn LoxCallable> {
     fn clone(&self) -> Box<dyn LoxCallable> {
         self.clone_box()
+    }
+}
+
+impl Debug for Box<dyn LoxCallable> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "LoxCallable")
     }
 }

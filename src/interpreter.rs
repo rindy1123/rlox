@@ -9,7 +9,7 @@ use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
 
 pub struct Interpreter {
-    environment: Environment,
+    pub environment: Environment,
     pub globals: Environment,
 }
 
@@ -95,6 +95,16 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
         let value = self.evaluate(&Box::new(stmt.clone().expression))?;
         println!("{}", stringify_object(value));
         Ok(())
+    }
+
+    fn visit_return_stmt(&mut self, stmt: &stmt::Return) -> Result<(), LangError> {
+        let value = if let Expr::Literal(literal) = stmt.clone().value {
+            Ok(Object::Value(literal.value))
+        } else {
+            self.evaluate(&Box::new(stmt.clone().value))
+        }?;
+
+        Err(LangError::Return(value))
     }
 
     fn visit_var_stmt(&mut self, stmt: &stmt::Var) -> Result<(), LangError> {

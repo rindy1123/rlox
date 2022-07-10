@@ -25,16 +25,24 @@ impl LoxCallable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<LiteralType>,
     ) -> Result<Object, LangError> {
-        let global_environment = Some(Box::new(interpreter.globals.clone()));
-        let mut environment = Environment::new(global_environment);
+        let environment = Some(Box::new(interpreter.environment.clone()));
+        let mut new_environment = Environment::new(environment);
         for n in 0..self.declaration.params.len() {
-            environment.define(
+            new_environment.define(
                 self.declaration.params[n].clone().lexeme,
                 Object::Value(arguments[n].clone()),
             );
         }
 
-        interpreter.execute_block(&self.declaration.body, environment)?;
+        if let Err(lang_error) = interpreter.execute_block(&self.declaration.body, new_environment)
+        {
+            if let LangError::Return(ret) = lang_error {
+                return Ok(ret);
+            } else {
+                return Err(lang_error);
+            };
+        }
+
         Ok(Object::Value(LiteralType::Nil))
     }
 

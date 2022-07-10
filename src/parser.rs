@@ -2,7 +2,7 @@ use crate::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary,
 use crate::lang_error::{self, LangError};
 use crate::object::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
-use crate::stmt::{Block, Expression, Function, If, Print, Stmt, Var, While};
+use crate::stmt::{Block, Expression, Function, If, Print, Return, Stmt, Var, While};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -103,6 +103,9 @@ impl Parser {
         if self.match_token_type(&vec![TokenType::Print]) {
             return self.print_statement();
         }
+        if self.match_token_type(&vec![TokenType::Return]) {
+            return self.return_statement();
+        }
         if self.match_token_type(&vec![TokenType::While]) {
             return self.while_statement();
         }
@@ -174,6 +177,19 @@ impl Parser {
         let value = self.expression()?;
         self.consume(TokenType::Semicolon, "Expect ';' after value.")?;
         Ok(Stmt::Print(Print::new(value)))
+    }
+
+    fn return_statement(&mut self) -> Result<Stmt, LangError> {
+        let keyword = self.previous().clone();
+        let value = if self.check(&TokenType::Semicolon) {
+            let nil = Expr::Literal(Literal::new(LiteralType::Nil));
+            Ok(nil)
+        } else {
+            self.expression()
+        }?;
+
+        self.consume(TokenType::Semicolon, "Expect ';' after return value.")?;
+        Ok(Stmt::Return(Return::new(keyword, value)))
     }
 
     fn while_statement(&mut self) -> Result<Stmt, LangError> {

@@ -12,6 +12,7 @@ pub fn define_ast(output_dir: &str) {
         "If; condition: Expr, then_statement: Box<Stmt>, else_statement: Option<Box<Stmt>>"
             .to_string(),
         "Print; expression: Expr".to_string(),
+        "Return; keyword: Token, value: Expr".to_string(),
         "Var; name: Token, initializer: Expr".to_string(),
         "While; condition: Expr, body: Box<Stmt>".to_string(),
     ];

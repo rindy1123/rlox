@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{lang_error::LangError, object::Object, scanner::token::Token};
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Environment {
     pub enclosing: Option<Box<Environment>>,
     values: HashMap<String, Object>,

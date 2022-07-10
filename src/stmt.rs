@@ -7,6 +7,7 @@ pub trait Visitor<T> {
     fn visit_function_stmt(&mut self, stmt: &Function) -> T;
     fn visit_if_stmt(&mut self, stmt: &If) -> T;
     fn visit_print_stmt(&mut self, stmt: &Print) -> T;
+    fn visit_return_stmt(&mut self, stmt: &Return) -> T;
     fn visit_var_stmt(&mut self, stmt: &Var) -> T;
     fn visit_while_stmt(&mut self, stmt: &While) -> T;
 }
@@ -22,6 +23,7 @@ pub enum Stmt {
     Function(Function),
     If(Box<If>),
     Print(Print),
+    Return(Return),
     Var(Var),
     While(Box<While>),
 }
@@ -34,6 +36,7 @@ impl<T> Accept<T> for Stmt {
             Stmt::Function(e) => e.accept(visitor),
             Stmt::If(e) => e.accept(visitor),
             Stmt::Print(e) => e.accept(visitor),
+            Stmt::Return(e) => e.accept(visitor),
             Stmt::Var(e) => e.accept(visitor),
             Stmt::While(e) => e.accept(visitor),
         }
@@ -134,6 +137,24 @@ impl Print {
 impl<T> Accept<T> for Print {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_print_stmt(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Return {
+    pub keyword: Token,
+    pub value: Expr,
+}
+
+impl Return {
+    pub fn new(keyword: Token, value: Expr) -> Return {
+        Return { keyword, value }
+    }
+}
+
+impl<T> Accept<T> for Return {
+    fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_return_stmt(self)
     }
 }
 

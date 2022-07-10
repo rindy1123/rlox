@@ -1,9 +1,13 @@
-use crate::scanner::token::{Token, TokenType};
+use crate::{
+    object::Object,
+    scanner::token::{Token, TokenType},
+};
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum LangError {
     ParseError,
     RuntimeError(String, Token),
+    Return(Object),
 }
 
 pub fn error(line_num: u32, message: String) {
