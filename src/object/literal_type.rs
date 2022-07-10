@@ -1,5 +1,6 @@
 use std::cmp;
 use std::ops;
+use substring::Substring;
 
 #[derive(Debug, Clone)]
 pub enum LiteralType {
@@ -24,6 +25,26 @@ pub fn is_truthy(literal_type: LiteralType) -> bool {
         true
     } else {
         false
+    }
+}
+
+impl LiteralType {
+    pub fn to_string(self) -> String {
+        match self {
+            LiteralType::Nil => "nil".to_string(),
+            LiteralType::Num(n) => {
+                let num_in_str = n.to_string();
+                if num_in_str.ends_with(".0") {
+                    let str_len = num_in_str.len();
+                    return num_in_str.substring(0, str_len - 2).to_string();
+                }
+                num_in_str
+            }
+            LiteralType::Str(string) => string,
+            LiteralType::True => "true".to_string(),
+            LiteralType::False => "false".to_string(),
+            LiteralType::Error(_) => panic!("Handle Error before stringifying"),
+        }
     }
 }
 

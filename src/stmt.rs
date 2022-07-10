@@ -4,6 +4,7 @@ use crate::scanner::token::Token;
 pub trait Visitor<T> {
     fn visit_block_stmt(&mut self, stmt: &Block) -> T;
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> T;
+    fn visit_function_stmt(&mut self, stmt: &Function) -> T;
     fn visit_if_stmt(&mut self, stmt: &If) -> T;
     fn visit_print_stmt(&mut self, stmt: &Print) -> T;
     fn visit_var_stmt(&mut self, stmt: &Var) -> T;
@@ -18,6 +19,7 @@ pub trait Accept<T> {
 pub enum Stmt {
     Block(Block),
     Expression(Expression),
+    Function(Function),
     If(Box<If>),
     Print(Print),
     Var(Var),
@@ -29,6 +31,7 @@ impl<T> Accept<T> for Stmt {
         match self {
             Stmt::Block(e) => e.accept(visitor),
             Stmt::Expression(e) => e.accept(visitor),
+            Stmt::Function(e) => e.accept(visitor),
             Stmt::If(e) => e.accept(visitor),
             Stmt::Print(e) => e.accept(visitor),
             Stmt::Var(e) => e.accept(visitor),
@@ -68,6 +71,25 @@ impl Expression {
 impl<T> Accept<T> for Expression {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_expression_stmt(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Function {
+    pub name: Token,
+    pub params: Vec<Token>,
+    pub body: Vec<Stmt>,
+}
+
+impl Function {
+    pub fn new(name: Token, params: Vec<Token>, body: Vec<Stmt>) -> Function {
+        Function { name, params, body }
+    }
+}
+
+impl<T> Accept<T> for Function {
+    fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_function_stmt(self)
     }
 }
 

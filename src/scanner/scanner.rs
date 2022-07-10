@@ -1,7 +1,7 @@
 use std::f64;
 
 use crate::lang_error;
-use crate::scanner::literal_type::LiteralType;
+use crate::object::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
 use substring::Substring;
 

@@ -1,16 +1,21 @@
-use crate::{interpreter::Interpreter, scanner::literal_type::LiteralType};
+pub mod literal_type;
+pub mod lox_function;
+
+use crate::{interpreter::Interpreter, lang_error::LangError};
+
+use self::literal_type::LiteralType;
 
 /// Values and Callable Objects that a user can define
 #[derive(Clone)]
-pub enum UserDefinableObject {
+pub enum Object {
     Callable(Box<dyn LoxCallable>),
     Value(LiteralType),
 }
 
-impl UserDefinableObject {
+impl Object {
     pub fn fetch_value(self) -> LiteralType {
         match self {
-            UserDefinableObject::Value(v) => v,
+            Object::Value(v) => v,
             _ => panic!("Supposed to be Value"),
         }
     }
@@ -19,7 +24,11 @@ impl UserDefinableObject {
 pub trait LoxCallable: LoxCallableClone {
     fn arity(&self) -> usize;
     fn to_string(&self) -> String;
-    fn call(&self, interpreter: &mut Interpreter, arguments: Vec<LiteralType>) -> LiteralType;
+    fn call(
+        &self,
+        interpreter: &mut Interpreter,
+        arguments: Vec<LiteralType>,
+    ) -> Result<Object, LangError>;
 }
 
 pub trait LoxCallableClone {

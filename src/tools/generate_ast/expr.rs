@@ -27,7 +27,7 @@ pub fn define_ast(output_dir: &str) {
 }
 
 fn define_dependency() -> String {
-    "use crate::scanner::literal_type::LiteralType;
+    "use crate::object::literal_type::LiteralType;
      use crate::scanner::token::Token;
 
     "

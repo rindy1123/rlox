@@ -1,8 +1,8 @@
 use crate::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable};
 use crate::lang_error::{self, LangError};
-use crate::scanner::literal_type::LiteralType;
+use crate::object::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
-use crate::stmt::{Block, Expression, If, Print, Stmt, Var, While};
+use crate::stmt::{Block, Expression, Function, If, Print, Stmt, Var, While};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -34,15 +34,16 @@ impl Parser {
     fn declaration(&mut self) -> Result<Stmt, LangError> {
         let result = if self.match_token_type(&vec![TokenType::Var]) {
             self.var_declaration()
+        } else if self.match_token_type(&vec![TokenType::Fun]) {
+            self.function("function")
         } else {
             self.statement()
         };
         if let Err(e) = result {
             self.synchronize();
-            Err(e)
-        } else {
-            result
+            return Err(e);
         }
+        result
     }
 
     fn var_declaration(&mut self) -> Result<Stmt, LangError> {
@@ -62,6 +63,34 @@ impl Parser {
         )?;
         let var = Var::new(name, initializer);
         Ok(Stmt::Var(var))
+    }
+
+    fn function(&mut self, kind: &str) -> Result<Stmt, LangError> {
+        let message = format!("Expect {} name.", kind);
+        let name = self.consume(TokenType::Identifier, &message)?.clone();
+        let message = format!("Expect '(' after {} name.", kind);
+        self.consume(TokenType::LeftParen, &message)?;
+        let mut parameters = Vec::new();
+        if !self.check(&TokenType::RightParen) {
+            loop {
+                if parameters.len() >= MAX_NUM_OF_ARGS {
+                    let error_message =
+                        format!("Can't have more than {} parameters.", MAX_NUM_OF_ARGS);
+                    lang_error::parser_error(self.peek(), error_message);
+                }
+                let parameter = self.consume(TokenType::Identifier, "Expect parameter name.")?;
+                parameters.push(parameter.clone());
+                if !self.match_token_type(&vec![TokenType::Comma]) {
+                    break;
+                }
+            }
+        }
+        self.consume(TokenType::RightParen, "Expect ')' after parameters.")?;
+
+        let message = format!("Expect '{{' before {} body.", kind);
+        self.consume(TokenType::LeftBrace, &message)?;
+        let body = self.block()?;
+        Ok(Stmt::Function(Function::new(name, parameters, body)))
     }
 
     fn statement(&mut self) -> Result<Stmt, LangError> {

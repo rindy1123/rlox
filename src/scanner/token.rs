@@ -1,4 +1,4 @@
-use super::literal_type::LiteralType;
+use crate::object::literal_type::LiteralType;
 
 #[derive(Debug, Clone)]
 pub struct Token {

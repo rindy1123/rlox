@@ -1,4 +1,4 @@
-use crate::scanner::literal_type::LiteralType;
+use crate::object::literal_type::LiteralType;
 use crate::scanner::token::Token;
 
 pub trait Visitor<T> {

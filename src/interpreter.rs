@@ -2,23 +2,25 @@ use crate::environment::Environment;
 use crate::expr::{self, Accept as AcceptExpr, Binary, Expr, Grouping, Literal, Unary};
 use crate::global_function;
 use crate::lang_error::LangError;
-use crate::scanner::literal_type::{self, LiteralType};
+use crate::object::literal_type::{self, LiteralType};
+use crate::object::lox_function::LoxFunction;
+use crate::object::Object;
 use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
-use crate::user_definable_object::UserDefinableObject;
-use substring::Substring;
 
 pub struct Interpreter {
     environment: Environment,
+    pub globals: Environment,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
         let mut globals = Environment::new(None);
-        let clock_function = UserDefinableObject::Callable(Box::new(global_function::Clock::new()));
+        let clock_function = Object::Callable(Box::new(global_function::Clock::new()));
         globals.define("clock".to_string(), clock_function);
         Interpreter {
-            environment: globals,
+            environment: globals.clone(),
+            globals,
         }
     }
 
@@ -33,7 +35,7 @@ impl Interpreter {
         statement.accept(self)
     }
 
-    fn execute_block(
+    pub fn execute_block(
         &mut self,
         statements: &Vec<Stmt>,
         environment: Environment,
@@ -52,7 +54,7 @@ impl Interpreter {
         result
     }
 
-    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<UserDefinableObject, LangError> {
+    fn evaluate(&mut self, expr: &Box<Expr>) -> Result<Object, LangError> {
         expr.clone().accept(self)
     }
 }
@@ -66,6 +68,14 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
 
     fn visit_expression_stmt(&mut self, stmt: &stmt::Expression) -> Result<(), LangError> {
         self.evaluate(&Box::new(stmt.clone().expression))?;
+        Ok(())
+    }
+
+    fn visit_function_stmt(&mut self, stmt: &stmt::Function) -> Result<(), LangError> {
+        let function = LoxFunction::new(stmt.clone());
+        let callable_object = Object::Callable(Box::new(function));
+        self.environment
+            .define(stmt.clone().name.lexeme, callable_object);
         Ok(())
     }
 
@@ -108,8 +118,8 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     }
 }
 
-impl expr::Visitor<Result<UserDefinableObject, LangError>> for Interpreter {
-    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<UserDefinableObject, LangError> {
+impl expr::Visitor<Result<Object, LangError>> for Interpreter {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<Object, LangError> {
         let left = self.evaluate(&expr.left)?.fetch_value();
         let right = self.evaluate(&expr.right)?.fetch_value();
         let value = match expr.operator.token_type {
@@ -128,17 +138,17 @@ impl expr::Visitor<Result<UserDefinableObject, LangError>> for Interpreter {
         if let LiteralType::Error(message) = value {
             return Err(LangError::RuntimeError(message, expr.clone().operator));
         }
-        Ok(UserDefinableObject::Value(value))
+        Ok(Object::Value(value))
     }
 
-    fn visit_call_expr(&mut self, expr: &expr::Call) -> Result<UserDefinableObject, LangError> {
+    fn visit_call_expr(&mut self, expr: &expr::Call) -> Result<Object, LangError> {
         let callee = self.evaluate(&expr.callee)?;
         let mut arguments = Vec::new();
         for arg in &expr.arguments {
             let evaluated_arg = self.evaluate(&Box::new(arg.clone()))?.fetch_value();
             arguments.push(evaluated_arg);
         }
-        let function = if let UserDefinableObject::Callable(c) = callee {
+        let function = if let Object::Callable(c) = callee {
             c
         } else {
             return Err(LangError::RuntimeError(
@@ -154,33 +164,30 @@ impl expr::Visitor<Result<UserDefinableObject, LangError>> for Interpreter {
             );
             return Err(LangError::RuntimeError(error_message, expr.clone().paren));
         }
-        let ret = function.call(self, arguments);
-        Ok(UserDefinableObject::Value(ret))
+        let ret = function.call(self, arguments)?;
+        Ok(ret)
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<UserDefinableObject, LangError> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, LangError> {
         self.evaluate(&expr.expression)
     }
 
-    fn visit_logical_expr(
-        &mut self,
-        expr: &expr::Logical,
-    ) -> Result<UserDefinableObject, LangError> {
+    fn visit_logical_expr(&mut self, expr: &expr::Logical) -> Result<Object, LangError> {
         let left = self.evaluate(&expr.left)?.fetch_value();
         if let TokenType::Or = expr.operator.token_type {
             if literal_type::is_truthy(left.clone()) {
-                return Ok(UserDefinableObject::Value(left));
+                return Ok(Object::Value(left));
             }
         } else {
             if !literal_type::is_truthy(left.clone()) {
-                return Ok(UserDefinableObject::Value(left));
+                return Ok(Object::Value(left));
             }
         }
 
         self.evaluate(&expr.right)
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<UserDefinableObject, LangError> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, LangError> {
         let right = self.evaluate(&expr.right)?.fetch_value();
         let value = match expr.operator.token_type {
             TokenType::Minus => -right,
@@ -190,49 +197,28 @@ impl expr::Visitor<Result<UserDefinableObject, LangError>> for Interpreter {
         if let LiteralType::Error(message) = value {
             return Err(LangError::RuntimeError(message, expr.clone().operator));
         }
-        Ok(UserDefinableObject::Value(value))
+        Ok(Object::Value(value))
     }
 
-    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<UserDefinableObject, LangError> {
-        let value = UserDefinableObject::Value(expr.value.clone());
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<Object, LangError> {
+        let value = Object::Value(expr.value.clone());
         Ok(value)
     }
 
-    fn visit_variable_expr(
-        &mut self,
-        expr: &expr::Variable,
-    ) -> Result<UserDefinableObject, LangError> {
+    fn visit_variable_expr(&mut self, expr: &expr::Variable) -> Result<Object, LangError> {
         self.environment.get(&expr.name)
     }
 
-    fn visit_assign_expr(&mut self, expr: &expr::Assign) -> Result<UserDefinableObject, LangError> {
+    fn visit_assign_expr(&mut self, expr: &expr::Assign) -> Result<Object, LangError> {
         let value = self.evaluate(&expr.value)?;
         self.environment.assign(expr.clone().name, value.clone())?;
         Ok(value)
     }
 }
 
-fn stringify_object(value: UserDefinableObject) -> String {
+fn stringify_object(value: Object) -> String {
     match value {
-        UserDefinableObject::Value(v) => stringify_literal(v),
-        _ => panic!(""),
-    }
-}
-
-fn stringify_literal(value: LiteralType) -> String {
-    match value {
-        LiteralType::Nil => "nil".to_string(),
-        LiteralType::Num(n) => {
-            let num_in_str = n.to_string();
-            if num_in_str.ends_with(".0") {
-                let str_len = num_in_str.len();
-                return num_in_str.substring(0, str_len - 2).to_string();
-            }
-            num_in_str
-        }
-        LiteralType::Str(string) => string,
-        LiteralType::True => "true".to_string(),
-        LiteralType::False => "false".to_string(),
-        LiteralType::Error(_) => panic!("Handle Error before stringifying"),
+        Object::Value(v) => v.to_string(),
+        Object::Callable(c) => c.to_string(),
     }
 }

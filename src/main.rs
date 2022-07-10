@@ -12,10 +12,10 @@ mod expr;
 mod global_function;
 mod interpreter;
 mod lang_error;
+mod object;
 mod parser;
 mod scanner;
 mod stmt;
-mod user_definable_object;
 
 fn run_file(path: &Path, interpreter: &mut Interpreter) {
     let source = fs::read_to_string(path).unwrap();
