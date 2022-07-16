@@ -1,17 +1,27 @@
+use std::rc::Rc;
+
 use crate::{
     environment::Environment, interpreter::Interpreter, lang_error::LangError, stmt::Function,
 };
 
-use super::{literal_type::LiteralType, LoxCallable, Object};
+use super::{
+    callable::{CallableType, LoxCallable},
+    literal_type::LiteralType,
+    Object,
+};
 
 #[derive(Clone)]
 pub struct LoxFunction {
     declaration: Function,
+    closure: Rc<Environment>,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Function) -> LoxFunction {
-        LoxFunction { declaration }
+    pub fn new(declaration: Function, closure: Rc<Environment>) -> CallableType {
+        CallableType::Function(Box::new(LoxFunction {
+            declaration,
+            closure,
+        }))
     }
 }
 
@@ -25,8 +35,7 @@ impl LoxCallable for LoxFunction {
         interpreter: &mut Interpreter,
         arguments: Vec<LiteralType>,
     ) -> Result<Object, LangError> {
-        let environment = Some(Box::new(interpreter.environment.clone()));
-        let mut new_environment = Environment::new(environment);
+        let new_environment = Environment::new(Some(self.closure.clone()));
         for n in 0..self.declaration.params.len() {
             new_environment.define(
                 self.declaration.params[n].clone().lexeme,
@@ -44,9 +53,5 @@ impl LoxCallable for LoxFunction {
         }
 
         Ok(Object::Value(LiteralType::Nil))
-    }
-
-    fn to_string(&self) -> String {
-        format!("<fn {}>", self.declaration.name.lexeme)
     }
 }

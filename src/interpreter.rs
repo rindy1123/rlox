@@ -1,7 +1,10 @@
+use std::rc::Rc;
+
 use crate::environment::Environment;
 use crate::expr::{self, Accept as AcceptExpr, Binary, Expr, Grouping, Literal, Unary};
 use crate::global_function;
 use crate::lang_error::LangError;
+use crate::object::callable::CallableType;
 use crate::object::literal_type::{self, LiteralType};
 use crate::object::lox_function::LoxFunction;
 use crate::object::Object;
@@ -9,18 +12,16 @@ use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
 
 pub struct Interpreter {
-    pub environment: Environment,
-    pub globals: Environment,
+    pub environment: Rc<Environment>,
 }
 
 impl Interpreter {
     pub fn new() -> Interpreter {
-        let mut globals = Environment::new(None);
-        let clock_function = Object::Callable(Box::new(global_function::Clock::new()));
+        let globals = Environment::new(None);
+        let clock_function = Object::Callable(global_function::Clock::new());
         globals.define("clock".to_string(), clock_function);
         Interpreter {
-            environment: globals.clone(),
-            globals,
+            environment: globals,
         }
     }
 
@@ -38,9 +39,9 @@ impl Interpreter {
     pub fn execute_block(
         &mut self,
         statements: &Vec<Stmt>,
-        environment: Environment,
+        environment: Rc<Environment>,
     ) -> Result<(), LangError> {
-        self.environment = environment;
+        self.environment = environment.clone();
         let result = || -> Result<(), LangError> {
             for statement in statements {
                 self.execute(statement)?;
@@ -50,7 +51,7 @@ impl Interpreter {
         // here is executing inside the block
         // which obviously means self.environment has a parent environment
         // so the interpreter panics if it has no parent environment
-        self.environment = self.environment.get_parent_environment().unwrap();
+        self.environment = self.environment.enclosing.clone().unwrap();
         result
     }
 
@@ -61,7 +62,7 @@ impl Interpreter {
 
 impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     fn visit_block_stmt(&mut self, stmt: &stmt::Block) -> Result<(), LangError> {
-        let previous_environment = Some(Box::new(self.environment.clone()));
+        let previous_environment = Some(self.environment.clone());
         self.execute_block(&stmt.statements, Environment::new(previous_environment))?;
         Ok(())
     }
@@ -72,10 +73,10 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     }
 
     fn visit_function_stmt(&mut self, stmt: &stmt::Function) -> Result<(), LangError> {
-        let function = LoxFunction::new(stmt.clone());
-        let callable_object = Object::Callable(Box::new(function));
-        self.environment
-            .define(stmt.clone().name.lexeme, callable_object);
+        let identifier = stmt.clone().name.lexeme;
+        let lox_function = LoxFunction::new(stmt.clone(), self.environment.clone());
+        let callable_object = Object::Callable(lox_function);
+        self.environment.define(identifier.clone(), callable_object);
         Ok(())
     }
 
@@ -159,7 +160,9 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
             arguments.push(evaluated_arg);
         }
         let function = if let Object::Callable(c) = callee {
-            c
+            match c {
+                CallableType::Function(id) => id,
+            }
         } else {
             return Err(LangError::RuntimeError(
                 "Can only call functions and classes.".to_string(),
