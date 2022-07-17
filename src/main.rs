@@ -10,7 +10,6 @@ use resolver::Resolver;
 
 mod environment;
 mod expr;
-mod global_function;
 mod interpreter;
 mod lang_error;
 mod object;

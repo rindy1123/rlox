@@ -3,11 +3,11 @@ use std::rc::Rc;
 
 use crate::environment::Environment;
 use crate::expr::{self, Accept as AcceptExpr, Binary, Expr, Grouping, Literal, Unary};
-use crate::global_function;
 use crate::lang_error::LangError;
+use crate::object::callable::global_function::Clock;
+use crate::object::callable::lox_function::LoxFunction;
 use crate::object::callable::CallableType;
 use crate::object::literal_type::{self, LiteralType};
-use crate::object::lox_function::LoxFunction;
 use crate::object::Object;
 use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
@@ -22,7 +22,7 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Interpreter {
         let globals = Environment::new(None);
-        let clock_function = Object::Callable(global_function::Clock::new());
+        let clock_function = Object::Callable(Clock::new());
         globals.define("clock".to_string(), clock_function);
         Interpreter {
             environment: globals.clone(),

@@ -1,3 +1,6 @@
+pub mod global_function;
+pub mod lox_function;
+
 use std::fmt::Debug;
 
 use crate::{interpreter::Interpreter, lang_error::LangError};
@@ -48,5 +51,16 @@ impl Clone for Box<dyn LoxCallable> {
 impl Debug for Box<dyn LoxCallable> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "LoxCallable")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::object::callable::global_function::Clock;
+
+    #[test]
+    fn test_to_string() {
+        let callable = Clock::new();
+        assert_eq!(callable.to_string(), "fn <LoxCallable>")
     }
 }

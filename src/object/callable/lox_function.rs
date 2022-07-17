@@ -1,14 +1,11 @@
 use std::rc::Rc;
 
 use crate::{
-    environment::Environment, interpreter::Interpreter, lang_error::LangError, stmt::Function,
+    environment::Environment, interpreter::Interpreter, lang_error::LangError,
+    object::literal_type::LiteralType, stmt::Function,
 };
 
-use super::{
-    callable::{CallableType, LoxCallable},
-    literal_type::LiteralType,
-    Object,
-};
+use super::{CallableType, LoxCallable, Object};
 
 #[derive(Clone)]
 pub struct LoxFunction {

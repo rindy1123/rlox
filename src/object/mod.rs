@@ -1,6 +1,5 @@
 pub mod callable;
 pub mod literal_type;
-pub mod lox_function;
 
 use std::fmt::Debug;
 
