@@ -47,6 +47,7 @@ impl Interpreter {
         statements: &Vec<Stmt>,
         environment: Rc<Environment>,
     ) -> Result<(), LangError> {
+        let previous_environment = self.environment.clone();
         self.environment = environment.clone();
         let result = || -> Result<(), LangError> {
             for statement in statements {
@@ -54,10 +55,7 @@ impl Interpreter {
             }
             Ok(())
         }();
-        // here is executing inside the block
-        // which obviously means self.environment has a parent environment
-        // so the interpreter panics if it has no parent environment
-        self.environment = self.environment.enclosing.clone().unwrap();
+        self.environment = previous_environment;
         result
     }
 
