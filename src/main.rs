@@ -6,6 +6,7 @@ use std::process::exit;
 
 use interpreter::Interpreter;
 use lang_error::LangError;
+use resolver::Resolver;
 
 mod environment;
 mod expr;
@@ -14,6 +15,7 @@ mod interpreter;
 mod lang_error;
 mod object;
 mod parser;
+mod resolver;
 mod scanner;
 mod stmt;
 
@@ -51,7 +53,9 @@ fn run(source: String, interpreter: &mut Interpreter) -> Result<(), LangError> {
     let tokens = scanner.scan_tokens();
     let mut parser = parser::Parser::new(tokens);
     let statements = parser.parse()?;
-    if let Err(ref e) = interpreter.interpret(statements) {
+    let mut resolver = Resolver::new(interpreter.clone());
+    resolver.resolve_statements(statements.clone());
+    if let Err(ref e) = resolver.interpreter.interpret(statements) {
         if let LangError::RuntimeError(message, token) = e {
             lang_error::error(token.line, message.to_string())
         }

@@ -11,6 +11,7 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: u32,
+    token_id_counter: u64,
 }
 
 const AND: &str = "and";
@@ -40,6 +41,7 @@ impl Default for Scanner {
             start: 0,
             current: 0,
             line: 1,
+            token_id_counter: 1,
         }
     }
 }
@@ -57,9 +59,16 @@ impl Scanner {
             self.start = self.current;
             self.scan_token();
         }
-        let eof_token = Token::new(TokenType::EOF, String::from(""), None, self.line);
+        let token_id = self.allocate_token_id();
+        let eof_token = Token::new(TokenType::EOF, String::from(""), None, self.line, token_id);
         self.tokens.push(eof_token);
         self.tokens.clone()
+    }
+
+    fn allocate_token_id(&mut self) -> u64 {
+        let token_id = self.token_id_counter;
+        self.token_id_counter += 1;
+        token_id
     }
 
     fn is_at_end(&self) -> bool {
@@ -164,7 +173,8 @@ impl Scanner {
 
     fn add_token(&mut self, token_type: TokenType, literal: Option<LiteralType>) {
         let lexeme = self.source.substring(self.start, self.current).to_string();
-        let token = Token::new(token_type, lexeme, literal, self.line);
+        let token_id = self.allocate_token_id();
+        let token = Token::new(token_type, lexeme, literal, self.line, token_id);
         self.tokens.push(token);
     }
 
@@ -297,6 +307,15 @@ mod tests {
         let mut scanner1 = create_scanner();
         scanner1.scan_token();
         assert_eq!(scanner1.tokens[0].token_type, TokenType::LeftParen);
+    }
+
+    #[test]
+    fn test_allocate_token_id() {
+        let mut scanner = create_scanner();
+        let token_id_1 = scanner.allocate_token_id();
+        assert_eq!(token_id_1, 1);
+        let token_id_2 = scanner.allocate_token_id();
+        assert_eq!(token_id_2, 2);
     }
 
     #[test]

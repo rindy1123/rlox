@@ -6,7 +6,6 @@ use super::{literal_type::LiteralType, Object};
 
 #[derive(Debug, Clone)]
 pub enum CallableType {
-    /// Hold Identifier inside
     Function(Box<dyn LoxCallable>),
 }
 

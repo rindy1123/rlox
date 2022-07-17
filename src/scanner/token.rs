@@ -6,6 +6,7 @@ pub struct Token {
     pub lexeme: String,
     pub literal: Option<LiteralType>,
     pub line: u32,
+    pub id: u64,
 }
 
 impl Token {
@@ -14,12 +15,14 @@ impl Token {
         lexeme: String,
         literal: Option<LiteralType>,
         line: u32,
+        id: u64,
     ) -> Token {
         Token {
             token_type,
             lexeme,
             literal,
             line,
+            id,
         }
     }
 }

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::environment::Environment;
@@ -11,8 +12,11 @@ use crate::object::Object;
 use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
 
+#[derive(Clone)]
 pub struct Interpreter {
     pub environment: Rc<Environment>,
+    globals: Rc<Environment>,
+    locals: HashMap<u64, usize>,
 }
 
 impl Interpreter {
@@ -21,7 +25,9 @@ impl Interpreter {
         let clock_function = Object::Callable(global_function::Clock::new());
         globals.define("clock".to_string(), clock_function);
         Interpreter {
-            environment: globals,
+            environment: globals.clone(),
+            globals: globals.clone(),
+            locals: HashMap::new(),
         }
     }
 
@@ -57,6 +63,17 @@ impl Interpreter {
 
     fn evaluate(&mut self, expr: &Box<Expr>) -> Result<Object, LangError> {
         expr.clone().accept(self)
+    }
+
+    pub fn resolve(&mut self, token_id: u64, depth: usize) {
+        self.locals.insert(token_id, depth);
+    }
+
+    fn look_up_variable(&self, name: Token) -> Result<Object, LangError> {
+        if let Some(distance) = self.locals.get(&name.id) {
+            return self.environment.get_at(*distance, name);
+        }
+        self.globals.get(&name)
     }
 }
 
@@ -219,12 +236,17 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
     }
 
     fn visit_variable_expr(&mut self, expr: &expr::Variable) -> Result<Object, LangError> {
-        self.environment.get(&expr.name)
+        self.look_up_variable(expr.name.clone())
     }
 
     fn visit_assign_expr(&mut self, expr: &expr::Assign) -> Result<Object, LangError> {
         let value = self.evaluate(&expr.value)?;
-        self.environment.assign(expr.clone().name, value.clone())?;
+        if let Some(distance) = self.locals.get(&expr.name.id) {
+            self.environment
+                .assign_at(*distance, expr.name.clone(), value.clone())?;
+        } else {
+            self.globals.assign(expr.clone().name, value.clone())?;
+        }
         Ok(value)
     }
 }
