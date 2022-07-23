@@ -6,6 +6,7 @@ use crate::{
 #[derive(Clone)]
 pub enum LangError {
     ParseError,
+    ResolveError,
     RuntimeError(String, Token),
     Return(Object),
 }

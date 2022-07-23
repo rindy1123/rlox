@@ -53,7 +53,7 @@ fn run(source: String, interpreter: &mut Interpreter) -> Result<(), LangError> {
     let mut parser = parser::Parser::new(tokens);
     let statements = parser.parse()?;
     let mut resolver = Resolver::new(interpreter.clone());
-    resolver.resolve_statements(statements.clone());
+    resolver.resolve_statements(statements.clone())?;
     if let Err(ref e) = resolver.interpreter.interpret(statements) {
         if let LangError::RuntimeError(message, token) = e {
             lang_error::error(token.line, message.to_string())
