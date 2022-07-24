@@ -33,4 +33,8 @@ impl LoxCallable for Clock {
         let ret = Object::Value(LiteralType::Num(current_time.as_secs_f64()));
         Ok(ret)
     }
+
+    fn to_string(&self) -> String {
+        "native fn <Clock>".to_string()
+    }
 }

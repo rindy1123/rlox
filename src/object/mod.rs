@@ -1,16 +1,16 @@
 pub mod callable;
 pub mod literal_type;
-pub mod lox_class;
+pub mod lox_instance;
 
 use std::fmt::Debug;
 
-use self::{callable::CallableType, literal_type::LiteralType, lox_class::LoxClass};
+use self::{callable::CallableType, literal_type::LiteralType, lox_instance::LoxInstance};
 
 /// Values and Callable Objects that a user can define
 #[derive(Debug, Clone)]
 pub enum Object {
     Callable(CallableType),
-    Class(LoxClass),
+    Instance(LoxInstance),
     Value(LiteralType),
 }
 

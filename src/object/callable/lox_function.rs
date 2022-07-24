@@ -51,4 +51,8 @@ impl LoxCallable for LoxFunction {
 
         Ok(Object::Value(LiteralType::Nil))
     }
+
+    fn to_string(&self) -> String {
+        format!("fn <{:?}>", self.declaration.name.lexeme)
+    }
 }

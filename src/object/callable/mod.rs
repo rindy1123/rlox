@@ -1,4 +1,5 @@
 pub mod global_function;
+pub mod lox_class;
 pub mod lox_function;
 
 use std::fmt::Debug;
@@ -10,12 +11,14 @@ use super::{literal_type::LiteralType, Object};
 #[derive(Debug, Clone)]
 pub enum CallableType {
     Function(Box<dyn LoxCallable>),
+    Class(Box<dyn LoxCallable>),
 }
 
 impl CallableType {
     pub fn to_string(&self) -> String {
         match self {
-            Self::Function(function) => format!("fn <{:?}>", function).to_string(),
+            Self::Function(function) => function.to_string(),
+            Self::Class(class) => class.to_string(),
         }
     }
 }
@@ -27,6 +30,7 @@ pub trait LoxCallable: LoxCallableClone {
         interpreter: &mut Interpreter,
         arguments: Vec<LiteralType>,
     ) -> Result<Object, LangError>;
+    fn to_string(&self) -> String;
 }
 
 pub trait LoxCallableClone {

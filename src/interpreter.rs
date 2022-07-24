@@ -5,10 +5,10 @@ use crate::environment::Environment;
 use crate::expr::{self, Accept as AcceptExpr, Binary, Expr, Grouping, Literal, Unary};
 use crate::lang_error::LangError;
 use crate::object::callable::global_function::Clock;
+use crate::object::callable::lox_class::LoxClass;
 use crate::object::callable::lox_function::LoxFunction;
 use crate::object::callable::CallableType;
 use crate::object::literal_type::{self, LiteralType};
-use crate::object::lox_class::LoxClass;
 use crate::object::Object;
 use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
@@ -86,8 +86,8 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     fn visit_class_stmt(&mut self, stmt: &stmt::Class) -> Result<(), LangError> {
         self.environment
             .define(stmt.name.lexeme.clone(), Object::Value(LiteralType::Nil));
-        let klass = LoxClass::new(stmt.name.lexeme.clone());
-        self.environment.assign(stmt.name.clone(), klass)?;
+        let class = LoxClass::new(stmt.name.lexeme.clone());
+        self.environment.assign(stmt.name.clone(), class)?;
         Ok(())
     }
 
@@ -183,9 +183,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
             let evaluated_arg = self.evaluate(&Box::new(arg.clone()))?.fetch_value();
             arguments.push(evaluated_arg);
         }
-        let function = if let Object::Callable(c) = callee {
+        let callable = if let Object::Callable(c) = callee {
             match c {
-                CallableType::Function(id) => id,
+                CallableType::Function(func) => func,
+                CallableType::Class(class) => class,
             }
         } else {
             return Err(LangError::RuntimeError(
@@ -193,15 +194,15 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
                 expr.clone().paren,
             ));
         };
-        if function.arity() != arguments.len() {
+        if callable.arity() != arguments.len() {
             let error_message = format!(
                 "Expected {} arguments but got {}.",
-                function.arity(),
+                callable.arity(),
                 arguments.len()
             );
             return Err(LangError::RuntimeError(error_message, expr.clone().paren));
         }
-        let ret = function.call(self, arguments)?;
+        let ret = callable.call(self, arguments)?;
         Ok(ret)
     }
 
@@ -262,6 +263,6 @@ fn stringify_object(object: Object) -> String {
     match object {
         Object::Value(value) => value.to_string(),
         Object::Callable(callable) => callable.to_string(),
-        Object::Class(class) => class.to_string(),
+        Object::Instance(instance) => instance.to_string(),
     }
 }
