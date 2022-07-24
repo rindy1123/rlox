@@ -198,6 +198,10 @@ impl expr::Visitor<Result<(), LangError>> for Resolver {
         Ok(())
     }
 
+    fn visit_get_expr(&mut self, expr: &expr::Get) -> Result<(), LangError> {
+        self.resolve_expression(*expr.object.clone())
+    }
+
     fn visit_grouping_expr(&mut self, expr: &expr::Grouping) -> Result<(), LangError> {
         self.resolve_expression(*expr.clone().expression)
     }

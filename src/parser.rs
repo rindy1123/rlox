@@ -1,4 +1,4 @@
-use crate::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary, Variable};
+use crate::expr::{Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Unary, Variable};
 use crate::lang_error::{self, LangError};
 use crate::object::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
@@ -317,6 +317,11 @@ impl Parser {
         loop {
             if self.match_token_type(&vec![TokenType::LeftParen]) {
                 expr = self.finish_call(expr.clone())?;
+            } else if self.match_token_type(&vec![TokenType::Dot]) {
+                let name =
+                    self.consume(TokenType::Identifier, "Expect property name after '.'.")?;
+                let get_expression = Get::new(Box::new(expr.clone()), name.clone());
+                expr = Expr::Get(get_expression);
             } else {
                 break;
             }

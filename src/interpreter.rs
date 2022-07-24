@@ -206,6 +206,18 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
         Ok(ret)
     }
 
+    fn visit_get_expr(&mut self, expr: &expr::Get) -> Result<Object, LangError> {
+        let object = self.evaluate(&expr.object)?;
+        let name = expr.name.clone();
+        match object {
+            Object::Instance(instance) => Ok(instance.get(name)?),
+            _ => Err(LangError::RuntimeError(
+                "Only instances have properties.".to_string(),
+                name,
+            )),
+        }
+    }
+
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<Object, LangError> {
         self.evaluate(&expr.expression)
     }
