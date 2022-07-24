@@ -7,6 +7,7 @@ pub const BASE_NAME: &str = "Stmt";
 pub fn define_ast(output_dir: &str) {
     let types = vec![
         "Block; statements: Vec<Stmt>".to_string(),
+        "Class; name: Token, methods: Vec<Function>".to_string(),
         "Expression; expression: Expr".to_string(),
         "Function; name: Token, params: Vec<Token>, body: Vec<Stmt>".to_string(),
         "If; condition: Expr, then_statement: Box<Stmt>, else_statement: Option<Box<Stmt>>"

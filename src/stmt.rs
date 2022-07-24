@@ -3,6 +3,7 @@ use crate::scanner::token::Token;
 
 pub trait Visitor<T> {
     fn visit_block_stmt(&mut self, stmt: &Block) -> T;
+    fn visit_class_stmt(&mut self, stmt: &Class) -> T;
     fn visit_expression_stmt(&mut self, stmt: &Expression) -> T;
     fn visit_function_stmt(&mut self, stmt: &Function) -> T;
     fn visit_if_stmt(&mut self, stmt: &If) -> T;
@@ -19,6 +20,7 @@ pub trait Accept<T> {
 #[derive(Clone)]
 pub enum Stmt {
     Block(Block),
+    Class(Class),
     Expression(Expression),
     Function(Function),
     If(Box<If>),
@@ -32,6 +34,7 @@ impl<T> Accept<T> for Stmt {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
         match self {
             Stmt::Block(e) => e.accept(visitor),
+            Stmt::Class(e) => e.accept(visitor),
             Stmt::Expression(e) => e.accept(visitor),
             Stmt::Function(e) => e.accept(visitor),
             Stmt::If(e) => e.accept(visitor),
@@ -57,6 +60,24 @@ impl Block {
 impl<T> Accept<T> for Block {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_block_stmt(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Class {
+    pub name: Token,
+    pub methods: Vec<Function>,
+}
+
+impl Class {
+    pub fn new(name: Token, methods: Vec<Function>) -> Class {
+        Class { name, methods }
+    }
+}
+
+impl<T> Accept<T> for Class {
+    fn accept(&self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_class_stmt(self)
     }
 }
 

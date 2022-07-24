@@ -8,6 +8,7 @@ use crate::object::callable::global_function::Clock;
 use crate::object::callable::lox_function::LoxFunction;
 use crate::object::callable::CallableType;
 use crate::object::literal_type::{self, LiteralType};
+use crate::object::lox_class::LoxClass;
 use crate::object::Object;
 use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
@@ -79,6 +80,14 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     fn visit_block_stmt(&mut self, stmt: &stmt::Block) -> Result<(), LangError> {
         let previous_environment = Some(self.environment.clone());
         self.execute_block(&stmt.statements, Environment::new(previous_environment))?;
+        Ok(())
+    }
+
+    fn visit_class_stmt(&mut self, stmt: &stmt::Class) -> Result<(), LangError> {
+        self.environment
+            .define(stmt.name.lexeme.clone(), Object::Value(LiteralType::Nil));
+        let klass = LoxClass::new(stmt.name.lexeme.clone());
+        self.environment.assign(stmt.name.clone(), klass)?;
         Ok(())
     }
 
@@ -249,9 +258,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
     }
 }
 
-fn stringify_object(value: Object) -> String {
-    match value {
-        Object::Value(v) => v.to_string(),
-        Object::Callable(c) => c.to_string(),
+fn stringify_object(object: Object) -> String {
+    match object {
+        Object::Value(value) => value.to_string(),
+        Object::Callable(callable) => callable.to_string(),
+        Object::Class(class) => class.to_string(),
     }
 }

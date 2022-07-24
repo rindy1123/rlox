@@ -2,7 +2,7 @@ use crate::expr::{Assign, Binary, Call, Expr, Grouping, Literal, Logical, Unary,
 use crate::lang_error::{self, LangError};
 use crate::object::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
-use crate::stmt::{Block, Expression, Function, If, Print, Return, Stmt, Var, While};
+use crate::stmt::{Block, Class, Expression, Function, If, Print, Return, Stmt, Var, While};
 
 #[derive(Default, Debug)]
 pub struct Parser {
@@ -36,6 +36,8 @@ impl Parser {
             self.var_declaration()
         } else if self.match_token_type(&vec![TokenType::Fun]) {
             self.function("function")
+        } else if self.match_token_type(&vec![TokenType::Class]) {
+            self.class_declaration()
         } else {
             self.statement()
         };
@@ -63,6 +65,24 @@ impl Parser {
         )?;
         let var = Var::new(name, initializer);
         Ok(Stmt::Var(var))
+    }
+
+    fn class_declaration(&mut self) -> Result<Stmt, LangError> {
+        let name = self
+            .consume(TokenType::Identifier, "Expect class name.")?
+            .clone();
+        self.consume(TokenType::LeftBrace, "Expect '{' before class body.")?;
+
+        let mut methods: Vec<Function> = Vec::new();
+        while !self.check(&TokenType::RightBrace) && !self.is_at_end() {
+            match self.function("method")? {
+                Stmt::Function(method) => methods.push(method),
+                _ => panic!("Supposed to be a method"),
+            }
+        }
+
+        self.consume(TokenType::RightBrace, "Expect '}' after class body.")?;
+        Ok(Stmt::Class(Class::new(name, methods)))
     }
 
     fn function(&mut self, kind: &str) -> Result<Stmt, LangError> {

@@ -115,6 +115,12 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
         Ok(())
     }
 
+    fn visit_class_stmt(&mut self, stmt: &stmt::Class) -> Result<(), LangError> {
+        self.declare(stmt.name.clone())?;
+        self.define(stmt.name.clone());
+        Ok(())
+    }
+
     fn visit_expression_stmt(&mut self, stmt: &stmt::Expression) -> Result<(), LangError> {
         self.resolve_expression(stmt.clone().expression)
     }
