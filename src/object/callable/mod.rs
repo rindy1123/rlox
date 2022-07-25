@@ -65,6 +65,6 @@ mod tests {
     #[test]
     fn test_to_string() {
         let callable = Clock::new();
-        assert_eq!(callable.to_string(), "fn <LoxCallable>")
+        assert_eq!(callable.to_string(), "native fn <Clock>")
     }
 }
