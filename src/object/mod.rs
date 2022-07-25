@@ -2,7 +2,7 @@ pub mod callable;
 pub mod literal_type;
 pub mod lox_instance;
 
-use std::fmt::Debug;
+use std::{fmt::Debug, rc::Rc};
 
 use self::{callable::CallableType, literal_type::LiteralType, lox_instance::LoxInstance};
 
@@ -10,7 +10,7 @@ use self::{callable::CallableType, literal_type::LiteralType, lox_instance::LoxI
 #[derive(Debug, Clone)]
 pub enum Object {
     Callable(CallableType),
-    Instance(LoxInstance),
+    Instance(Rc<LoxInstance>),
     Value(LiteralType),
 }
 

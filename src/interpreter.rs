@@ -211,7 +211,6 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
     }
 
     fn visit_get_expr(&mut self, expr: &expr::Get) -> Result<Object, LangError> {
-        // FIXME: Can't hold state
         let object = self.evaluate(&expr.object)?;
         let name = expr.name.clone();
         match object {
@@ -246,7 +245,7 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
         let object = self.evaluate(&expr.object)?;
         let name = expr.name.clone();
         match object {
-            Object::Instance(mut instance) => {
+            Object::Instance(instance) => {
                 let value = self.evaluate(&expr.value)?;
                 instance.set(name, value.clone());
                 Ok(value)

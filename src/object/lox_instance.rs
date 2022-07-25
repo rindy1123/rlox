@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{lang_error::LangError, object::Object, scanner::token::Token};
 
@@ -7,19 +7,20 @@ use super::callable::lox_class::LoxClass;
 #[derive(Debug, Clone)]
 pub struct LoxInstance {
     class: LoxClass,
-    fields: HashMap<String, Object>,
+    fields: RefCell<HashMap<String, Object>>,
 }
 
 impl LoxInstance {
     pub fn new(class: LoxClass) -> Object {
-        Object::Instance(LoxInstance {
+        let lox_instance = LoxInstance {
             class,
-            fields: HashMap::new(),
-        })
+            fields: RefCell::new(HashMap::new()),
+        };
+        Object::Instance(Rc::new(lox_instance))
     }
 
     pub fn get(&self, name: Token) -> Result<Object, LangError> {
-        if let Some(v) = self.fields.get(&name.lexeme) {
+        if let Some(v) = self.fields.borrow().get(&name.lexeme) {
             return Ok(v.clone());
         }
         if let Some(method) = self.class.methods.get(&name.lexeme) {
@@ -29,8 +30,8 @@ impl LoxInstance {
         Err(LangError::RuntimeError(error_message, name))
     }
 
-    pub fn set(&mut self, name: Token, value: Object) {
-        self.fields.insert(name.lexeme, value);
+    pub fn set(&self, name: Token, value: Object) {
+        self.fields.borrow_mut().insert(name.lexeme, value);
     }
 
     pub fn to_string(&self) -> String {
