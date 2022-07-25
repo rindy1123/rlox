@@ -207,6 +207,7 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
     }
 
     fn visit_get_expr(&mut self, expr: &expr::Get) -> Result<Object, LangError> {
+        // FIXME: Can't hold state
         let object = self.evaluate(&expr.object)?;
         let name = expr.name.clone();
         match object {
@@ -235,6 +236,22 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
         }
 
         self.evaluate(&expr.right)
+    }
+
+    fn visit_set_expr(&mut self, expr: &expr::Set) -> Result<Object, LangError> {
+        let object = self.evaluate(&expr.object)?;
+        let name = expr.name.clone();
+        match object {
+            Object::Instance(mut instance) => {
+                let value = self.evaluate(&expr.value)?;
+                instance.set(name, value.clone());
+                Ok(value)
+            }
+            _ => Err(LangError::RuntimeError(
+                "Only instances have fields.".to_string(),
+                name,
+            )),
+        }
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, LangError> {

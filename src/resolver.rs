@@ -215,6 +215,11 @@ impl expr::Visitor<Result<(), LangError>> for Resolver {
         self.resolve_expression(*expr.clone().right)
     }
 
+    fn visit_set_expr(&mut self, expr: &expr::Set) -> Result<(), LangError> {
+        self.resolve_expression(*expr.clone().value)?;
+        self.resolve_expression(*expr.clone().object)
+    }
+
     fn visit_unary_expr(&mut self, expr: &expr::Unary) -> Result<(), LangError> {
         self.resolve_expression(*expr.clone().right)
     }

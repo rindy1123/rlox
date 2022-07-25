@@ -29,6 +29,10 @@ impl LoxInstance {
         }
     }
 
+    pub fn set(&mut self, name: Token, value: Object) {
+        self.fields.insert(name.lexeme, value);
+    }
+
     pub fn to_string(&self) -> String {
         format!("{} instance", self.class.name)
     }

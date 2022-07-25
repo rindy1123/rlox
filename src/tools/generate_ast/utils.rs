@@ -1,7 +1,7 @@
 use crate::expr;
 
-const BOX_REQUIRED: [&str; 9] = [
-    "Assign", "Binary", "Call", "Get", "Grouping", "Logical", "Unary", "If", "While",
+const BOX_REQUIRED: [&str; 10] = [
+    "Assign", "Binary", "Call", "Get", "Grouping", "Logical", "Set", "Unary", "If", "While",
 ];
 
 pub fn define_enum(types: Vec<String>, base_name: String) -> String {

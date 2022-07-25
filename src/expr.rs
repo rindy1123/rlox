@@ -9,6 +9,7 @@ pub trait Visitor<T> {
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> T;
     fn visit_literal_expr(&mut self, expr: &Literal) -> T;
     fn visit_logical_expr(&mut self, expr: &Logical) -> T;
+    fn visit_set_expr(&mut self, expr: &Set) -> T;
     fn visit_unary_expr(&mut self, expr: &Unary) -> T;
     fn visit_variable_expr(&mut self, expr: &Variable) -> T;
 }
@@ -26,6 +27,7 @@ pub enum Expr {
     Grouping(Box<Grouping>),
     Literal(Literal),
     Logical(Box<Logical>),
+    Set(Box<Set>),
     Unary(Box<Unary>),
     Variable(Variable),
 }
@@ -40,6 +42,7 @@ impl<T> Accept<T> for Expr {
             Expr::Grouping(e) => e.accept(visitor),
             Expr::Literal(e) => e.accept(visitor),
             Expr::Logical(e) => e.accept(visitor),
+            Expr::Set(e) => e.accept(visitor),
             Expr::Unary(e) => e.accept(visitor),
             Expr::Variable(e) => e.accept(visitor),
         }
@@ -182,6 +185,29 @@ impl Logical {
 impl<T> Accept<T> for Logical {
     fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_logical_expr(self)
+    }
+}
+
+#[derive(Clone)]
+pub struct Set {
+    pub object: Box<Expr>,
+    pub name: Token,
+    pub value: Box<Expr>,
+}
+
+impl Set {
+    pub fn new(object: Box<Expr>, name: Token, value: Box<Expr>) -> Box<Set> {
+        Box::new(Set {
+            object,
+            name,
+            value,
+        })
+    }
+}
+
+impl<T> Accept<T> for Set {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_set_expr(self)
     }
 }
 

@@ -8,3 +8,5 @@ print DevonshireCream;
 
 var instance = DevonshireCream();
 print instance;
+instance.a = 1;
+print instance.a;

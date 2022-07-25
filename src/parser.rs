@@ -1,4 +1,6 @@
-use crate::expr::{Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Unary, Variable};
+use crate::expr::{
+    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, Unary, Variable,
+};
 use crate::lang_error::{self, LangError};
 use crate::object::literal_type::LiteralType;
 use crate::scanner::token::{Token, TokenType};
@@ -250,13 +252,20 @@ impl Parser {
             let equals = self.previous().clone();
             let value = self.assignment()?;
 
-            if let Expr::Variable(var) = expr {
-                let name = var.name;
-                let assign = Expr::Assign(Assign::new(name, Box::new(value)));
-                return Ok(assign);
-            } else {
-                lang_error::parser_error(&equals, "Expect expression.".to_string());
-                return Err(LangError::ParseError);
+            match expr {
+                Expr::Variable(var) => {
+                    let name = var.name;
+                    let assign = Expr::Assign(Assign::new(name, Box::new(value)));
+                    return Ok(assign);
+                }
+                Expr::Get(get) => {
+                    let set = Set::new(get.object, get.name, Box::new(value));
+                    return Ok(Expr::Set(set));
+                }
+                _ => {
+                    lang_error::parser_error(&equals, "Expect expression.".to_string());
+                    return Err(LangError::ParseError);
+                }
             }
         }
 
