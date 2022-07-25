@@ -14,11 +14,11 @@ pub struct LoxFunction {
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Function, closure: Rc<Environment>) -> CallableType {
-        CallableType::Function(Box::new(LoxFunction {
+    pub fn new(declaration: Function, closure: Rc<Environment>) -> Object {
+        Object::Callable(CallableType::Function(Box::new(LoxFunction {
             declaration,
             closure,
-        }))
+        })))
     }
 }
 

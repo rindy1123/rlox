@@ -18,6 +18,7 @@ pub struct Resolver {
 enum FunctionType {
     None,
     Function,
+    Method,
 }
 
 impl Resolver {
@@ -118,6 +119,11 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
     fn visit_class_stmt(&mut self, stmt: &stmt::Class) -> Result<(), LangError> {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
+
+        for method in stmt.methods.iter() {
+            let declaration = FunctionType::Method;
+            self.resolve_function(method.clone(), declaration)?;
+        }
         Ok(())
     }
 

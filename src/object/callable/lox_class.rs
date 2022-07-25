@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     interpreter::Interpreter,
     lang_error::LangError,
@@ -9,11 +11,12 @@ use super::{CallableType, LoxCallable};
 #[derive(Debug, Clone)]
 pub struct LoxClass {
     pub name: String,
+    pub methods: HashMap<String, Object>,
 }
 
 impl LoxClass {
-    pub fn new(name: String) -> Object {
-        let lox_class = Box::new(LoxClass { name });
+    pub fn new(name: String, methods: HashMap<String, Object>) -> Object {
+        let lox_class = Box::new(LoxClass { name, methods });
         Object::Callable(CallableType::Class(lox_class))
     }
 }
