@@ -16,7 +16,7 @@ pub fn define_enum(types: Vec<String>, base_name: String) -> String {
     });
     format!(
         "
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub enum {} {{
         {}
     }}
@@ -61,7 +61,7 @@ pub fn define_struct(struct_name: String, fields: String) -> String {
     });
     format!(
         "
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct {struct_name} {{
         {fields}
     }}

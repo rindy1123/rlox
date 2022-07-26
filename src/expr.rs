@@ -10,6 +10,7 @@ pub trait Visitor<T> {
     fn visit_literal_expr(&mut self, expr: &Literal) -> T;
     fn visit_logical_expr(&mut self, expr: &Logical) -> T;
     fn visit_set_expr(&mut self, expr: &Set) -> T;
+    fn visit_this_expr(&mut self, expr: &This) -> T;
     fn visit_unary_expr(&mut self, expr: &Unary) -> T;
     fn visit_variable_expr(&mut self, expr: &Variable) -> T;
 }
@@ -18,7 +19,7 @@ pub trait Accept<T> {
     fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Expr {
     Assign(Box<Assign>),
     Binary(Box<Binary>),
@@ -28,6 +29,7 @@ pub enum Expr {
     Literal(Literal),
     Logical(Box<Logical>),
     Set(Box<Set>),
+    This(This),
     Unary(Box<Unary>),
     Variable(Variable),
 }
@@ -43,13 +45,14 @@ impl<T> Accept<T> for Expr {
             Expr::Literal(e) => e.accept(visitor),
             Expr::Logical(e) => e.accept(visitor),
             Expr::Set(e) => e.accept(visitor),
+            Expr::This(e) => e.accept(visitor),
             Expr::Unary(e) => e.accept(visitor),
             Expr::Variable(e) => e.accept(visitor),
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Assign {
     pub name: Token,
     pub value: Box<Expr>,
@@ -67,7 +70,7 @@ impl<T> Accept<T> for Assign {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Binary {
     pub left: Box<Expr>,
     pub operator: Token,
@@ -90,7 +93,7 @@ impl<T> Accept<T> for Binary {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Call {
     pub callee: Box<Expr>,
     pub paren: Token,
@@ -113,7 +116,7 @@ impl<T> Accept<T> for Call {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Get {
     pub object: Box<Expr>,
     pub name: Token,
@@ -131,7 +134,7 @@ impl<T> Accept<T> for Get {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Grouping {
     pub expression: Box<Expr>,
 }
@@ -148,7 +151,7 @@ impl<T> Accept<T> for Grouping {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Literal {
     pub value: LiteralType,
 }
@@ -165,7 +168,7 @@ impl<T> Accept<T> for Literal {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Logical {
     pub left: Box<Expr>,
     pub operator: Token,
@@ -188,7 +191,7 @@ impl<T> Accept<T> for Logical {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Set {
     pub object: Box<Expr>,
     pub name: Token,
@@ -211,7 +214,24 @@ impl<T> Accept<T> for Set {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
+pub struct This {
+    pub keyword: Token,
+}
+
+impl This {
+    pub fn new(keyword: Token) -> This {
+        This { keyword }
+    }
+}
+
+impl<T> Accept<T> for This {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_this_expr(self)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Unary {
     pub operator: Token,
     pub right: Box<Expr>,
@@ -229,7 +249,7 @@ impl<T> Accept<T> for Unary {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Variable {
     pub name: Token,
 }

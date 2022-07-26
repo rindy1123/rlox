@@ -104,7 +104,10 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     fn visit_function_stmt(&mut self, stmt: &stmt::Function) -> Result<(), LangError> {
         let identifier = stmt.clone().name.lexeme;
         let lox_function = LoxFunction::new(stmt.clone(), self.environment.clone());
-        self.environment.define(identifier.clone(), lox_function);
+        self.environment.define(
+            identifier.clone(),
+            Object::Callable(CallableType::Function(Box::new(lox_function))),
+        );
         Ok(())
     }
 
@@ -214,7 +217,7 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
         let object = self.evaluate(&expr.object)?;
         let name = expr.name.clone();
         match object {
-            Object::Instance(instance) => Ok(instance.get(name)?),
+            Object::Instance(instance) => Ok(instance.clone().get(name)?),
             _ => Err(LangError::RuntimeError(
                 "Only instances have properties.".to_string(),
                 name,
@@ -255,6 +258,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
                 name,
             )),
         }
+    }
+
+    fn visit_this_expr(&mut self, expr: &expr::This) -> Result<Object, LangError> {
+        self.look_up_variable(expr.keyword.clone())
     }
 
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<Object, LangError> {

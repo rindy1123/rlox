@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 use crate::{
     expr::{self, Accept as AcceptExpr, Expr},
@@ -10,7 +10,7 @@ use crate::{
 
 pub struct Resolver {
     pub interpreter: Interpreter,
-    scopes: Vec<HashMap<String, bool>>,
+    scopes: Vec<RefCell<HashMap<String, bool>>>,
     current_function: FunctionType,
 }
 
@@ -46,7 +46,8 @@ impl Resolver {
     }
 
     fn begin_scope(&mut self) {
-        self.scopes.push(HashMap::new());
+        let scope = RefCell::new(HashMap::new());
+        self.scopes.push(scope);
     }
 
     fn end_scope(&mut self) {
@@ -57,8 +58,8 @@ impl Resolver {
         if self.scopes.is_empty() {
             return Ok(());
         }
-        let mut scope = self.scopes.pop().unwrap();
-        let result = if scope.contains_key(&name.lexeme) {
+        let scope = self.scopes.pop().unwrap();
+        let result = if scope.borrow().contains_key(&name.lexeme) {
             report_error(
                 name.line,
                 "Already a variable with this name in this scope.".to_string(),
@@ -66,7 +67,7 @@ impl Resolver {
         } else {
             Ok(())
         };
-        scope.insert(name.lexeme, false);
+        scope.borrow_mut().insert(name.lexeme, false);
         self.scopes.push(scope);
         result
     }
@@ -75,14 +76,14 @@ impl Resolver {
         if self.scopes.is_empty() {
             return;
         }
-        let mut scope = self.scopes.pop().unwrap();
-        scope.insert(name.lexeme, true);
+        let scope = self.scopes.pop().unwrap();
+        scope.borrow_mut().insert(name.lexeme, true);
         self.scopes.push(scope);
     }
 
     fn resolve_local_variable(&mut self, name: Token) {
         for (i, scope) in self.scopes.iter().rev().enumerate() {
-            if scope.contains_key(&name.lexeme) {
+            if scope.borrow().contains_key(&name.lexeme) {
                 self.interpreter.resolve(name.id, i);
             }
         }
@@ -120,10 +121,17 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
+        self.begin_scope();
+        self.scopes
+            .last()
+            .unwrap()
+            .borrow_mut()
+            .insert("this".to_string(), true);
         for method in stmt.methods.iter() {
             let declaration = FunctionType::Method;
             self.resolve_function(method.clone(), declaration)?;
         }
+        self.end_scope();
         Ok(())
     }
 
@@ -226,13 +234,19 @@ impl expr::Visitor<Result<(), LangError>> for Resolver {
         self.resolve_expression(*expr.clone().object)
     }
 
+    fn visit_this_expr(&mut self, expr: &expr::This) -> Result<(), LangError> {
+        self.resolve_local_variable(expr.keyword.clone());
+        Ok(())
+    }
+
     fn visit_unary_expr(&mut self, expr: &expr::Unary) -> Result<(), LangError> {
         self.resolve_expression(*expr.clone().right)
     }
 
     fn visit_variable_expr(&mut self, expr: &expr::Variable) -> Result<(), LangError> {
         let result = if !self.scopes.is_empty() {
-            let variable = self.scopes.last().unwrap().get(&expr.name.lexeme);
+            let scope = self.scopes.last().unwrap().borrow();
+            let variable = scope.get(&expr.name.lexeme);
             if variable.is_some() && !variable.unwrap() {
                 return report_error(
                     expr.name.line,

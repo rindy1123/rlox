@@ -6,16 +6,16 @@ use crate::{
     object::{literal_type::LiteralType, lox_instance::LoxInstance, Object},
 };
 
-use super::{CallableType, LoxCallable};
+use super::{lox_function::LoxFunction, CallableType, LoxCallable};
 
 #[derive(Debug, Clone)]
 pub struct LoxClass {
     pub name: String,
-    pub methods: HashMap<String, Object>,
+    pub methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: String, methods: HashMap<String, Object>) -> Object {
+    pub fn new(name: String, methods: HashMap<String, LoxFunction>) -> Object {
         let lox_class = Box::new(LoxClass { name, methods });
         Object::Callable(CallableType::Class(lox_class))
     }

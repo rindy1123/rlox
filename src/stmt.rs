@@ -17,7 +17,7 @@ pub trait Accept<T> {
     fn accept(&self, visitor: &mut impl Visitor<T>) -> T;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Stmt {
     Block(Block),
     Class(Class),
@@ -46,7 +46,7 @@ impl<T> Accept<T> for Stmt {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Block {
     pub statements: Vec<Stmt>,
 }
@@ -63,7 +63,7 @@ impl<T> Accept<T> for Block {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Class {
     pub name: Token,
     pub methods: Vec<Function>,
@@ -81,7 +81,7 @@ impl<T> Accept<T> for Class {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Expression {
     pub expression: Expr,
 }
@@ -98,7 +98,7 @@ impl<T> Accept<T> for Expression {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Function {
     pub name: Token,
     pub params: Vec<Token>,
@@ -117,7 +117,7 @@ impl<T> Accept<T> for Function {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct If {
     pub condition: Expr,
     pub then_statement: Box<Stmt>,
@@ -144,7 +144,7 @@ impl<T> Accept<T> for If {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Print {
     pub expression: Expr,
 }
@@ -161,7 +161,7 @@ impl<T> Accept<T> for Print {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Return {
     pub keyword: Token,
     pub value: Expr,
@@ -179,7 +179,7 @@ impl<T> Accept<T> for Return {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Var {
     pub name: Token,
     pub initializer: Expr,
@@ -197,7 +197,7 @@ impl<T> Accept<T> for Var {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct While {
     pub condition: Expr,
     pub body: Box<Stmt>,

@@ -1,5 +1,5 @@
 use crate::expr::{
-    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, Unary, Variable,
+    Assign, Binary, Call, Expr, Get, Grouping, Literal, Logical, Set, This, Unary, Variable,
 };
 use crate::lang_error::{self, LangError};
 use crate::object::literal_type::LiteralType;
@@ -384,6 +384,11 @@ impl Parser {
             self.consume(TokenType::RightParen, "Expect ')' after expression.")?;
             let grouping = Grouping::new(Box::new(expr));
             return Ok(Expr::Grouping(grouping));
+        }
+
+        if self.match_token_type(&vec![TokenType::This]) {
+            let this_token = self.previous().clone();
+            return Ok(Expr::This(This::new(this_token)));
         }
 
         if self.match_token_type(&vec![TokenType::Identifier]) {

@@ -1,24 +1,34 @@
 use std::rc::Rc;
 
 use crate::{
-    environment::Environment, interpreter::Interpreter, lang_error::LangError,
-    object::literal_type::LiteralType, stmt::Function,
+    environment::Environment,
+    interpreter::Interpreter,
+    lang_error::LangError,
+    object::{literal_type::LiteralType, lox_instance::LoxInstance},
+    stmt::Function,
 };
 
-use super::{CallableType, LoxCallable, Object};
+use super::{LoxCallable, Object};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct LoxFunction {
     declaration: Function,
     closure: Rc<Environment>,
 }
 
 impl LoxFunction {
-    pub fn new(declaration: Function, closure: Rc<Environment>) -> Object {
-        Object::Callable(CallableType::Function(Box::new(LoxFunction {
+    pub fn new(declaration: Function, closure: Rc<Environment>) -> LoxFunction {
+        LoxFunction {
             declaration,
             closure,
-        })))
+        }
+    }
+
+    pub fn bind(self, instance: Rc<LoxInstance>) -> Self {
+        let environment = Environment::new(Some(self.closure));
+        let instance = Object::Instance(instance);
+        environment.define("this".to_string(), instance);
+        Self::new(self.declaration, environment)
     }
 }
 
