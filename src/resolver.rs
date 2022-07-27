@@ -12,6 +12,7 @@ pub struct Resolver {
     pub interpreter: Interpreter,
     scopes: Vec<RefCell<HashMap<String, bool>>>,
     current_function: FunctionType,
+    current_class: ClassType,
 }
 
 #[derive(Clone, Debug)]
@@ -21,12 +22,19 @@ enum FunctionType {
     Method,
 }
 
+#[derive(Clone, Debug)]
+enum ClassType {
+    None,
+    Class,
+}
+
 impl Resolver {
     pub fn new(interpreter: Interpreter) -> Resolver {
         Resolver {
             interpreter,
             scopes: Vec::new(),
             current_function: FunctionType::None,
+            current_class: ClassType::None,
         }
     }
 
@@ -118,6 +126,8 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
     }
 
     fn visit_class_stmt(&mut self, stmt: &stmt::Class) -> Result<(), LangError> {
+        let enclosing_class = self.current_class.clone();
+        self.current_class = ClassType::Class;
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
@@ -132,6 +142,8 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
             self.resolve_function(method.clone(), declaration)?;
         }
         self.end_scope();
+
+        self.current_class = enclosing_class;
         Ok(())
     }
 
@@ -235,6 +247,12 @@ impl expr::Visitor<Result<(), LangError>> for Resolver {
     }
 
     fn visit_this_expr(&mut self, expr: &expr::This) -> Result<(), LangError> {
+        if let ClassType::None = self.current_class {
+            return report_error(
+                expr.keyword.line,
+                "Can't use 'this' outside of a class.".to_string(),
+            );
+        }
         self.resolve_local_variable(expr.keyword.clone());
         Ok(())
     }
