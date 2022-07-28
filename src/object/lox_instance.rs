@@ -11,12 +11,11 @@ pub struct LoxInstance {
 }
 
 impl LoxInstance {
-    pub fn new(class: LoxClass) -> Object {
-        let lox_instance = LoxInstance {
+    pub fn new(class: LoxClass) -> LoxInstance {
+        LoxInstance {
             class,
             fields: RefCell::new(HashMap::new()),
-        };
-        Object::Instance(Rc::new(lox_instance))
+        }
     }
 
     pub fn get(self: Rc<Self>, name: Token) -> Result<Object, LangError> {

@@ -19,6 +19,7 @@ pub struct Resolver {
 enum FunctionType {
     None,
     Function,
+    Initializer,
     Method,
 }
 
@@ -138,7 +139,11 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
             .borrow_mut()
             .insert("this".to_string(), true);
         for method in stmt.methods.iter() {
-            let declaration = FunctionType::Method;
+            let declaration = if method.name.lexeme == "init".to_string() {
+                FunctionType::Initializer
+            } else {
+                FunctionType::Method
+            };
             self.resolve_function(method.clone(), declaration)?;
         }
         self.end_scope();
@@ -174,13 +179,16 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
     }
 
     fn visit_return_stmt(&mut self, stmt: &stmt::Return) -> Result<(), LangError> {
-        let result = if let FunctionType::None = self.current_function {
-            report_error(
+        let result = match self.current_function {
+            FunctionType::None => report_error(
                 stmt.keyword.line,
                 "Can't return from top-level code.".to_string(),
-            )
-        } else {
-            Ok(())
+            ),
+            FunctionType::Initializer => report_error(
+                stmt.keyword.line,
+                "Can't return a value from an initializer.".to_string(),
+            ),
+            _ => Ok(()),
         };
         self.resolve_expression(stmt.clone().value)?;
         result

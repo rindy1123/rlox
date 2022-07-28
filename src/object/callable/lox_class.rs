@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use crate::{
     interpreter::Interpreter,
@@ -24,13 +24,25 @@ impl LoxClass {
 impl LoxCallable for LoxClass {
     fn call(
         &self,
-        _interpreter: &mut Interpreter,
-        _arguments: Vec<LiteralType>,
+        interpreter: &mut Interpreter,
+        arguments: Vec<LiteralType>,
     ) -> Result<Object, LangError> {
-        Ok(LoxInstance::new(self.clone()))
+        let instance = Rc::new(LoxInstance::new(self.clone()));
+        let initializer = self.methods.get("init");
+        if let Some(init_method) = initializer {
+            init_method
+                .clone()
+                .bind(instance.clone())
+                .call(interpreter, arguments)?;
+        }
+        Ok(Object::Instance(instance))
     }
 
     fn arity(&self) -> usize {
+        let initializer = self.methods.get("init");
+        if let Some(init_method) = initializer {
+            return init_method.arity();
+        }
         0
     }
 

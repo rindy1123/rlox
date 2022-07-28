@@ -88,7 +88,9 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
             .define(stmt.name.lexeme.clone(), Object::Value(LiteralType::Nil));
         let mut methods = HashMap::new();
         for method in stmt.methods.iter() {
-            let function = LoxFunction::new(method.clone(), self.environment.clone());
+            let is_initializer = method.clone().name.lexeme == "init".to_string();
+            let function =
+                LoxFunction::new(method.clone(), self.environment.clone(), is_initializer);
             methods.insert(method.clone().name.lexeme, function);
         }
         let class = LoxClass::new(stmt.name.lexeme.clone(), methods);
@@ -103,7 +105,7 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
 
     fn visit_function_stmt(&mut self, stmt: &stmt::Function) -> Result<(), LangError> {
         let identifier = stmt.clone().name.lexeme;
-        let lox_function = LoxFunction::new(stmt.clone(), self.environment.clone());
+        let lox_function = LoxFunction::new(stmt.clone(), self.environment.clone(), false);
         self.environment.define(
             identifier.clone(),
             Object::Callable(CallableType::Function(Box::new(lox_function))),
