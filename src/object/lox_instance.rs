@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{lang_error::LangError, object::Object, scanner::token::Token};
 
-use super::callable::{lox_class::LoxClass, CallableType};
+use super::callable::lox_class::LoxClass;
 
 #[derive(Debug, Clone)]
 pub struct LoxInstance {
@@ -24,7 +24,7 @@ impl LoxInstance {
         }
         if let Some(method) = self.class.methods.get(&name.lexeme) {
             let lox_function = Box::new(method.clone().bind(self));
-            let object = Object::Callable(CallableType::Function(lox_function));
+            let object = Object::Function(lox_function);
             return Ok(object);
         }
         let error_message = format!("Undefined property '{}'.", name.lexeme);

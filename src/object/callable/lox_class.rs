@@ -3,21 +3,30 @@ use std::{collections::HashMap, rc::Rc};
 use crate::{
     interpreter::Interpreter,
     lang_error::LangError,
-    object::{literal_type::LiteralType, lox_instance::LoxInstance, Object},
+    object::{literal_type::LiteralType, lox_instance::LoxInstance, LoxCallable, Object},
 };
 
-use super::{lox_function::LoxFunction, CallableType, LoxCallable};
+use super::lox_function::LoxFunction;
 
 #[derive(Debug, Clone)]
 pub struct LoxClass {
     pub name: String,
+    pub superclass: Option<Box<LoxClass>>,
     pub methods: HashMap<String, LoxFunction>,
 }
 
 impl LoxClass {
-    pub fn new(name: String, methods: HashMap<String, LoxFunction>) -> Object {
-        let lox_class = Box::new(LoxClass { name, methods });
-        Object::Callable(CallableType::Class(lox_class))
+    pub fn new(
+        name: String,
+        superclass: Option<Box<LoxClass>>,
+        methods: HashMap<String, LoxFunction>,
+    ) -> Object {
+        let lox_class = LoxClass {
+            name,
+            superclass,
+            methods,
+        };
+        Object::Class(lox_class)
     }
 }
 

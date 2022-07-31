@@ -132,6 +132,15 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
         self.declare(stmt.name.clone())?;
         self.define(stmt.name.clone());
 
+        if let Some(superclass) = stmt.superclass.clone() {
+            if stmt.name.lexeme == superclass.name.lexeme {
+                report_error(
+                    superclass.name.line,
+                    "A class can't inherit from itself.".to_string(),
+                )?;
+            }
+            self.resolve_expression(Expr::Variable(superclass))?;
+        }
         self.begin_scope();
         self.scopes
             .last()

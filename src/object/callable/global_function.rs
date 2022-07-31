@@ -3,19 +3,15 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::{
     interpreter::Interpreter,
     lang_error::LangError,
-    object::{
-        callable::{CallableType, LoxCallable},
-        literal_type::LiteralType,
-        Object,
-    },
+    object::{literal_type::LiteralType, LoxCallable, Object},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Clock {}
 
 impl Clock {
-    pub fn new() -> CallableType {
-        CallableType::Function(Box::new(Clock {}))
+    pub fn new() -> Clock {
+        Clock {}
     }
 }
 

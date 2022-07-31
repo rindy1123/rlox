@@ -4,12 +4,10 @@ use crate::{
     environment::Environment,
     interpreter::Interpreter,
     lang_error::LangError,
-    object::{literal_type::LiteralType, lox_instance::LoxInstance},
+    object::{literal_type::LiteralType, lox_instance::LoxInstance, LoxCallable, Object},
     scanner::token::{Token, TokenType},
     stmt::Function,
 };
-
-use super::{LoxCallable, Object};
 
 #[derive(Clone, Debug)]
 pub struct LoxFunction {

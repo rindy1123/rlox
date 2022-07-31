@@ -7,9 +7,8 @@ use crate::lang_error::LangError;
 use crate::object::callable::global_function::Clock;
 use crate::object::callable::lox_class::LoxClass;
 use crate::object::callable::lox_function::LoxFunction;
-use crate::object::callable::CallableType;
 use crate::object::literal_type::{self, LiteralType};
-use crate::object::Object;
+use crate::object::{LoxCallable, Object};
 use crate::scanner::token::*;
 use crate::stmt::{self, Accept as AcceptStmt, Stmt};
 
@@ -23,7 +22,7 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Interpreter {
         let globals = Environment::new(None);
-        let clock_function = Object::Callable(Clock::new());
+        let clock_function = Object::Function(Box::new(Clock::new()));
         globals.define("clock".to_string(), clock_function);
         Interpreter {
             environment: globals.clone(),
@@ -74,6 +73,24 @@ impl Interpreter {
         }
         self.globals.get(&name)
     }
+
+    fn call_callable(
+        &mut self,
+        callable: Box<dyn LoxCallable>,
+        arguments: Vec<LiteralType>,
+        token: Token,
+    ) -> Result<Object, LangError> {
+        if callable.arity() != arguments.len() {
+            let error_message = format!(
+                "Expected {} arguments but got {}.",
+                callable.arity(),
+                arguments.len()
+            );
+            return Err(LangError::RuntimeError(error_message, token));
+        }
+        let ret = callable.call(self, arguments)?;
+        Ok(ret)
+    }
 }
 
 impl stmt::Visitor<Result<(), LangError>> for Interpreter {
@@ -84,6 +101,20 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     }
 
     fn visit_class_stmt(&mut self, stmt: &stmt::Class) -> Result<(), LangError> {
+        let superclass = if let Some(superclass_expr) = stmt.superclass.clone() {
+            let object = self.evaluate(&Box::new(Expr::Variable(superclass_expr.clone())))?;
+            match object {
+                Object::Class(class) => Some(Box::new(class)),
+                _ => {
+                    return Err(LangError::RuntimeError(
+                        "Superclass must be a class.".to_string(),
+                        superclass_expr.name,
+                    ));
+                }
+            }
+        } else {
+            None
+        };
         self.environment
             .define(stmt.name.lexeme.clone(), Object::Value(LiteralType::Nil));
         let mut methods = HashMap::new();
@@ -93,7 +124,7 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
                 LoxFunction::new(method.clone(), self.environment.clone(), is_initializer);
             methods.insert(method.clone().name.lexeme, function);
         }
-        let class = LoxClass::new(stmt.name.lexeme.clone(), methods);
+        let class = LoxClass::new(stmt.name.lexeme.clone(), superclass, methods);
         self.environment.assign(stmt.name.clone(), class)?;
         Ok(())
     }
@@ -106,10 +137,8 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
     fn visit_function_stmt(&mut self, stmt: &stmt::Function) -> Result<(), LangError> {
         let identifier = stmt.clone().name.lexeme;
         let lox_function = LoxFunction::new(stmt.clone(), self.environment.clone(), false);
-        self.environment.define(
-            identifier.clone(),
-            Object::Callable(CallableType::Function(Box::new(lox_function))),
-        );
+        self.environment
+            .define(identifier.clone(), Object::Function(Box::new(lox_function)));
         Ok(())
     }
 
@@ -192,27 +221,18 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
             let evaluated_arg = self.evaluate(&Box::new(arg.clone()))?.fetch_value();
             arguments.push(evaluated_arg);
         }
-        let callable = if let Object::Callable(c) = callee {
-            match c {
-                CallableType::Function(func) => func,
-                CallableType::Class(class) => class,
+        match callee {
+            Object::Class(class) => {
+                self.call_callable(Box::new(class), arguments, expr.clone().paren)
             }
-        } else {
-            return Err(LangError::RuntimeError(
-                "Can only call functions and classes.".to_string(),
-                expr.clone().paren,
-            ));
-        };
-        if callable.arity() != arguments.len() {
-            let error_message = format!(
-                "Expected {} arguments but got {}.",
-                callable.arity(),
-                arguments.len()
-            );
-            return Err(LangError::RuntimeError(error_message, expr.clone().paren));
+            Object::Function(func) => self.call_callable(func, arguments, expr.clone().paren),
+            _ => {
+                return Err(LangError::RuntimeError(
+                    "Can only call functions and classes.".to_string(),
+                    expr.clone().paren,
+                ));
+            }
         }
-        let ret = callable.call(self, arguments)?;
-        Ok(ret)
     }
 
     fn visit_get_expr(&mut self, expr: &expr::Get) -> Result<Object, LangError> {
@@ -303,7 +323,8 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
 fn stringify_object(object: Object) -> String {
     match object {
         Object::Value(value) => value.to_string(),
-        Object::Callable(callable) => callable.to_string(),
+        Object::Function(func) => func.to_string(),
+        Object::Class(class) => class.to_string(),
         Object::Instance(instance) => instance.to_string(),
     }
 }
