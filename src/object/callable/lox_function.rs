@@ -5,7 +5,6 @@ use crate::{
     interpreter::Interpreter,
     lang_error::LangError,
     object::{literal_type::LiteralType, lox_instance::LoxInstance, LoxCallable, Object},
-    scanner::token::{Token, TokenType},
     stmt::Function,
 };
 
@@ -60,8 +59,11 @@ impl LoxCallable for LoxFunction {
             match lang_error {
                 LangError::Return(ret) => {
                     if self.is_initializer {
-                        let this_token = generate_this_token(self.declaration.clone());
-                        return self.closure.get_at(0, this_token);
+                        return self.closure.get_at(
+                            0,
+                            "this".to_string(),
+                            self.declaration.name.line,
+                        );
                     }
                     return Ok(ret);
                 }
@@ -72,8 +74,9 @@ impl LoxCallable for LoxFunction {
         }
 
         if self.is_initializer {
-            let this_token = generate_this_token(self.declaration.clone());
-            return self.closure.get_at(0, this_token);
+            return self
+                .closure
+                .get_at(0, "this".to_string(), self.declaration.name.line);
         }
         Ok(Object::Value(LiteralType::Nil))
     }
@@ -81,10 +84,4 @@ impl LoxCallable for LoxFunction {
     fn to_string(&self) -> String {
         format!("fn <{:?}>", self.declaration.name.lexeme)
     }
-}
-
-fn generate_this_token(declaration: Function) -> Token {
-    let line = declaration.name.line;
-    let id = declaration.name.id;
-    Token::new(TokenType::This, "this".to_string(), None, line, id)
 }

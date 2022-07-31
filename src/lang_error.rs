@@ -7,7 +7,7 @@ use crate::{
 pub enum LangError {
     ParseError,
     ResolveError,
-    RuntimeError(String, Token),
+    RuntimeError { message: String, line: u32 },
     Return(Object),
 }
 

@@ -27,8 +27,11 @@ impl LoxInstance {
             let object = Object::Function(lox_function);
             return Ok(object);
         }
-        let error_message = format!("Undefined property '{}'.", name.lexeme);
-        Err(LangError::RuntimeError(error_message, name))
+        let message = format!("Undefined property '{}'.", name.lexeme);
+        Err(LangError::RuntimeError {
+            message,
+            line: name.line,
+        })
     }
 
     pub fn set(&self, name: Token, value: Object) {

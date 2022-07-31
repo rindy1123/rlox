@@ -30,15 +30,18 @@ impl Environment {
         }
 
         let message = format!("Undefined variable '{}'.", name.lexeme);
-        Err(LangError::RuntimeError(message, name.clone()))
+        Err(LangError::RuntimeError {
+            message,
+            line: name.clone().line,
+        })
     }
 
-    pub fn get_at(&self, distance: usize, name: Token) -> Result<Object, LangError> {
-        if let Some(value) = self.ancestor(distance).values.borrow().get(&name.lexeme) {
+    pub fn get_at(&self, distance: usize, name: String, line: u32) -> Result<Object, LangError> {
+        if let Some(value) = self.ancestor(distance).values.borrow().get(&name) {
             return Ok(value.clone());
         } else {
-            let message = format!("Undefined variable '{}'.", name.lexeme);
-            Err(LangError::RuntimeError(message, name.clone()))
+            let message = format!("Undefined variable '{}'.", name);
+            Err(LangError::RuntimeError { message, line })
         }
     }
 
@@ -54,7 +57,10 @@ impl Environment {
         }
 
         let message = format!("Undefined variable '{}'.", name.lexeme);
-        Err(LangError::RuntimeError(message, name.clone()))
+        Err(LangError::RuntimeError {
+            message,
+            line: name.clone().line,
+        })
     }
 
     pub fn assign_at(&self, distance: usize, name: Token, value: Object) -> Result<(), LangError> {
@@ -65,7 +71,10 @@ impl Environment {
         }
 
         let message = format!("Undefined variable '{}'.", name.lexeme);
-        Err(LangError::RuntimeError(message, name.clone()))
+        Err(LangError::RuntimeError {
+            message,
+            line: name.clone().line,
+        })
     }
 
     fn ancestor(&self, distance: usize) -> &Self {

@@ -10,6 +10,7 @@ pub trait Visitor<T> {
     fn visit_literal_expr(&mut self, expr: &Literal) -> T;
     fn visit_logical_expr(&mut self, expr: &Logical) -> T;
     fn visit_set_expr(&mut self, expr: &Set) -> T;
+    fn visit_super_expr(&mut self, expr: &Super) -> T;
     fn visit_this_expr(&mut self, expr: &This) -> T;
     fn visit_unary_expr(&mut self, expr: &Unary) -> T;
     fn visit_variable_expr(&mut self, expr: &Variable) -> T;
@@ -29,6 +30,7 @@ pub enum Expr {
     Literal(Literal),
     Logical(Box<Logical>),
     Set(Box<Set>),
+    Super(Super),
     This(This),
     Unary(Box<Unary>),
     Variable(Variable),
@@ -45,6 +47,7 @@ impl<T> Accept<T> for Expr {
             Expr::Literal(e) => e.accept(visitor),
             Expr::Logical(e) => e.accept(visitor),
             Expr::Set(e) => e.accept(visitor),
+            Expr::Super(e) => e.accept(visitor),
             Expr::This(e) => e.accept(visitor),
             Expr::Unary(e) => e.accept(visitor),
             Expr::Variable(e) => e.accept(visitor),
@@ -211,6 +214,24 @@ impl Set {
 impl<T> Accept<T> for Set {
     fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
         visitor.visit_set_expr(self)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Super {
+    pub keyword: Token,
+    pub method: Token,
+}
+
+impl Super {
+    pub fn new(keyword: Token, method: Token) -> Super {
+        Super { keyword, method }
+    }
+}
+
+impl<T> Accept<T> for Super {
+    fn accept(&mut self, visitor: &mut impl Visitor<T>) -> T {
+        visitor.visit_super_expr(self)
     }
 }
 

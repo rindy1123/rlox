@@ -14,6 +14,7 @@ pub fn define_ast(output_dir: &str) {
         "Literal; value: LiteralType".to_string(),
         "Logical; left: Box<Expr>, operator: Token, right: Box<Expr>".to_string(),
         "Set; object: Box<Expr>, name: Token, value: Box<Expr>".to_string(),
+        "Super; keyword: Token, method: Token".to_string(),
         "This; keyword: Token".to_string(),
         "Unary; operator: Token, right: Box<Expr>".to_string(),
         "Variable; name: Token".to_string(),

@@ -22,7 +22,7 @@ fn run_file(path: &Path, interpreter: &mut Interpreter) {
     let source = fs::read_to_string(path).unwrap();
     if let Err(e) = run(source, interpreter) {
         match e {
-            LangError::RuntimeError(_, _) => exit(70),
+            LangError::RuntimeError { .. } => exit(70),
             _ => exit(65),
         }
     };
@@ -55,8 +55,8 @@ fn run(source: String, interpreter: &mut Interpreter) -> Result<(), LangError> {
     let mut resolver = Resolver::new(interpreter.clone());
     resolver.resolve_statements(statements.clone())?;
     if let Err(ref e) = resolver.interpreter.interpret(statements) {
-        if let LangError::RuntimeError(message, token) = e {
-            lang_error::error(token.line, message.to_string())
+        if let LangError::RuntimeError { message, line } = e {
+            lang_error::error(*line, message.to_string())
         }
         return Err(e.clone());
     }

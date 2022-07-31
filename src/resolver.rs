@@ -8,9 +8,26 @@ use crate::{
     stmt::{self, Accept as AcceptStmt, Stmt},
 };
 
+type Scopes = Vec<RefCell<HashMap<String, bool>>>;
+
+impl ScopesOps<String, bool> for Scopes {
+    fn insert_to_last(&mut self, key: String, value: bool) -> Option<bool> {
+        self.last().unwrap().borrow_mut().insert(key, value)
+    }
+}
+
+trait ScopesOps<K, V> {
+    /// insert a key-value pair into the last scope
+    /// # Examples
+    /// ```
+    /// scopes.insert_to_last("key", 1);
+    /// ```
+    fn insert_to_last(&mut self, key: K, value: V) -> Option<V>;
+}
+
 pub struct Resolver {
     pub interpreter: Interpreter,
-    scopes: Vec<RefCell<HashMap<String, bool>>>,
+    scopes: Scopes,
     current_function: FunctionType,
     current_class: ClassType,
 }
@@ -140,13 +157,11 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
                 )?;
             }
             self.resolve_expression(Expr::Variable(superclass))?;
+            self.begin_scope();
+            self.scopes.insert_to_last("super".to_string(), true);
         }
         self.begin_scope();
-        self.scopes
-            .last()
-            .unwrap()
-            .borrow_mut()
-            .insert("this".to_string(), true);
+        self.scopes.insert_to_last("this".to_string(), true);
         for method in stmt.methods.iter() {
             let declaration = if method.name.lexeme == "init".to_string() {
                 FunctionType::Initializer
@@ -156,6 +171,9 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
             self.resolve_function(method.clone(), declaration)?;
         }
         self.end_scope();
+        if let Some(_) = stmt.superclass.clone() {
+            self.end_scope();
+        }
 
         self.current_class = enclosing_class;
         Ok(())
@@ -261,6 +279,11 @@ impl expr::Visitor<Result<(), LangError>> for Resolver {
     fn visit_set_expr(&mut self, expr: &expr::Set) -> Result<(), LangError> {
         self.resolve_expression(*expr.clone().value)?;
         self.resolve_expression(*expr.clone().object)
+    }
+
+    fn visit_super_expr(&mut self, expr: &expr::Super) -> Result<(), LangError> {
+        self.resolve_local_variable(expr.clone().keyword);
+        Ok(())
     }
 
     fn visit_this_expr(&mut self, expr: &expr::This) -> Result<(), LangError> {

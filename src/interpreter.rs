@@ -69,7 +69,7 @@ impl Interpreter {
 
     fn look_up_variable(&self, name: Token) -> Result<Object, LangError> {
         if let Some(distance) = self.locals.get(&name.id) {
-            return self.environment.get_at(*distance, name);
+            return self.environment.get_at(*distance, name.lexeme, name.line);
         }
         self.globals.get(&name)
     }
@@ -81,12 +81,15 @@ impl Interpreter {
         token: Token,
     ) -> Result<Object, LangError> {
         if callable.arity() != arguments.len() {
-            let error_message = format!(
+            let message = format!(
                 "Expected {} arguments but got {}.",
                 callable.arity(),
                 arguments.len()
             );
-            return Err(LangError::RuntimeError(error_message, token));
+            return Err(LangError::RuntimeError {
+                message,
+                line: token.line,
+            });
         }
         let ret = callable.call(self, arguments)?;
         Ok(ret)
@@ -106,10 +109,10 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
             match object {
                 Object::Class(class) => Some(Box::new(class)),
                 _ => {
-                    return Err(LangError::RuntimeError(
-                        "Superclass must be a class.".to_string(),
-                        superclass_expr.name,
-                    ));
+                    return Err(LangError::RuntimeError {
+                        message: "Superclass must be a class.".to_string(),
+                        line: superclass_expr.name.line,
+                    });
                 }
             }
         } else {
@@ -117,6 +120,11 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
         };
         self.environment
             .define(stmt.name.lexeme.clone(), Object::Value(LiteralType::Nil));
+        if let Some(superclass) = superclass.clone() {
+            self.environment = Environment::new(Some(self.environment.clone()));
+            self.environment
+                .define("super".to_string(), Object::Class(*superclass));
+        }
         let mut methods = HashMap::new();
         for method in stmt.methods.iter() {
             let is_initializer = method.clone().name.lexeme == "init".to_string();
@@ -124,7 +132,10 @@ impl stmt::Visitor<Result<(), LangError>> for Interpreter {
                 LoxFunction::new(method.clone(), self.environment.clone(), is_initializer);
             methods.insert(method.clone().name.lexeme, function);
         }
-        let class = LoxClass::new(stmt.name.lexeme.clone(), superclass, methods);
+        let class = LoxClass::new(stmt.name.lexeme.clone(), superclass.clone(), methods);
+        if let Some(_) = superclass {
+            self.environment = self.environment.enclosing.clone().unwrap().clone();
+        }
         self.environment.assign(stmt.name.clone(), class)?;
         Ok(())
     }
@@ -209,7 +220,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
             _ => panic!("invalid Expression"),
         };
         if let LiteralType::Error(message) = value {
-            return Err(LangError::RuntimeError(message, expr.clone().operator));
+            return Err(LangError::RuntimeError {
+                message,
+                line: expr.clone().operator.line,
+            });
         }
         Ok(Object::Value(value))
     }
@@ -227,10 +241,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
             }
             Object::Function(func) => self.call_callable(func, arguments, expr.clone().paren),
             _ => {
-                return Err(LangError::RuntimeError(
-                    "Can only call functions and classes.".to_string(),
-                    expr.clone().paren,
-                ));
+                return Err(LangError::RuntimeError {
+                    message: "Can only call functions and classes.".to_string(),
+                    line: expr.clone().paren.line,
+                });
             }
         }
     }
@@ -240,10 +254,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
         let name = expr.name.clone();
         match object {
             Object::Instance(instance) => Ok(instance.clone().get(name)?),
-            _ => Err(LangError::RuntimeError(
-                "Only instances have properties.".to_string(),
-                name,
-            )),
+            _ => Err(LangError::RuntimeError {
+                message: "Only instances have properties.".to_string(),
+                line: name.line,
+            }),
         }
     }
 
@@ -275,10 +289,46 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
                 instance.set(name, value.clone());
                 Ok(value)
             }
-            _ => Err(LangError::RuntimeError(
-                "Only instances have fields.".to_string(),
-                name,
-            )),
+            _ => Err(LangError::RuntimeError {
+                message: "Only instances have fields.".to_string(),
+                line: name.line,
+            }),
+        }
+    }
+
+    fn visit_super_expr(&mut self, expr: &expr::Super) -> Result<Object, LangError> {
+        let distance = self.locals.get(&expr.keyword.id).unwrap();
+        let keyword = expr.keyword.clone();
+        let superclass = self
+            .environment
+            .get_at(*distance, keyword.lexeme, keyword.line)?;
+        let object = self
+            .environment
+            .get_at(*distance - 1, "this".to_string(), keyword.line)?;
+        let method = if let Object::Class(class) = superclass {
+            match class.find_method(expr.clone().method.lexeme) {
+                Some(method) => method,
+                None => {
+                    let message = format!("Undefined property '{}' .", expr.method.lexeme);
+                    return Err(LangError::RuntimeError {
+                        message,
+                        line: expr.method.line,
+                    });
+                }
+            }
+        } else {
+            return Err(LangError::RuntimeError {
+                message: "Expected class.".to_string(),
+                line: expr.method.line,
+            });
+        };
+        if let Object::Instance(instance) = object {
+            Ok(Object::Function(Box::new(method.bind(instance))))
+        } else {
+            Err(LangError::RuntimeError {
+                message: "Expected class.".to_string(),
+                line: expr.method.line,
+            })
         }
     }
 
@@ -294,7 +344,10 @@ impl expr::Visitor<Result<Object, LangError>> for Interpreter {
             _ => panic!("invalid Expression"),
         };
         if let LiteralType::Error(message) = value {
-            return Err(LangError::RuntimeError(message, expr.clone().operator));
+            return Err(LangError::RuntimeError {
+                message,
+                line: expr.clone().operator.line,
+            });
         }
         Ok(Object::Value(value))
     }
