@@ -28,6 +28,18 @@ impl LoxClass {
         };
         Object::Class(lox_class)
     }
+
+    pub fn find_method(&self, name: String) -> Option<LoxFunction> {
+        if let Some(method) = self.methods.get(&name) {
+            return Some(method.clone());
+        }
+
+        if let Some(superclass) = self.superclass.clone() {
+            superclass.find_method(name)
+        } else {
+            None
+        }
+    }
 }
 
 impl LoxCallable for LoxClass {

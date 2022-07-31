@@ -22,7 +22,7 @@ impl LoxInstance {
         if let Some(v) = self.fields.borrow().get(&name.lexeme) {
             return Ok(v.clone());
         }
-        if let Some(method) = self.class.methods.get(&name.lexeme) {
+        if let Some(method) = self.class.find_method(name.lexeme.clone()) {
             let lox_function = Box::new(method.clone().bind(self));
             let object = Object::Function(lox_function);
             return Ok(object);
