@@ -44,6 +44,7 @@ enum FunctionType {
 enum ClassType {
     None,
     Class,
+    SubClass,
 }
 
 impl Resolver {
@@ -156,6 +157,7 @@ impl stmt::Visitor<Result<(), LangError>> for Resolver {
                     "A class can't inherit from itself.".to_string(),
                 )?;
             }
+            self.current_class = ClassType::SubClass;
             self.resolve_expression(Expr::Variable(superclass))?;
             self.begin_scope();
             self.scopes.insert_to_last("super".to_string(), true);
@@ -282,6 +284,18 @@ impl expr::Visitor<Result<(), LangError>> for Resolver {
     }
 
     fn visit_super_expr(&mut self, expr: &expr::Super) -> Result<(), LangError> {
+        if let ClassType::None = self.current_class {
+            return report_error(
+                expr.keyword.line,
+                "Can't use 'super' outside of a class.".to_string(),
+            );
+        }
+        if let ClassType::Class = self.current_class {
+            return report_error(
+                expr.keyword.line,
+                "Can't use 'super' in a class with no superclass.".to_string(),
+            );
+        }
         self.resolve_local_variable(expr.clone().keyword);
         Ok(())
     }
